@@ -1,0 +1,280 @@
+<div align="center">
+
+<strong>Send an encrypted message through any chat, using a GitHub username as the address.</strong>
+
+[![ci](https://github.com/gufranco/osm/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/osm/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)](#development)
+[![shell](https://img.shields.io/badge/bash-3.2%2B-lightgrey)](#quick-start)
+
+<p align="center">
+  <a href="#quick-start"><strong>Quick start</strong></a> &nbsp;|&nbsp;
+  <a href="#how-it-works">How it works</a> &nbsp;|&nbsp;
+  <a href="#what-it-does-not-do"><strong>Security limits</strong></a> &nbsp;|&nbsp;
+  <a href="#troubleshooting">Troubleshooting</a>
+</p>
+
+</div>
+
+**5** commands · **2** crypto engines · **70** tests · **96%** coverage · **macOS + Linux** · **zero** runtime dependencies beyond `age`
+
+---
+
+```console
+$ osm send alice 'database password: correct-horse-battery-staple'
+-----BEGIN OSM MESSAGE-----
+v: 1
+alg: age
+to: alice
+key: SHA256:iD5CQysP5Zu+ugBNVoQSDruYFlSFJSJiFQwUXbpdGh4
+
+YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IHNzaC1lZDI1NTE5IGlENUNReSBhWDNu
+UjZQd2NCRWRhVGJZbUFVWjZHUUFEeUJIUGNZTFVoMkc5ZmVRR0ZzCg==
+-----END OSM MESSAGE-----
+osm: copied to the clipboard with pbcopy.
+```
+
+Paste that into Slack, Telegram, a Jira ticket, or an email. Alice runs one command:
+
+```console
+$ pbpaste | osm read
+database password: correct-horse-battery-staple
+```
+
+No key exchange, no keyserver, no accounts. Alice needs nothing beyond the SSH key her GitHub profile already publishes.
+
+---
+
+## The problem
+
+Pasting a credential into a chat window puts it in someone else's database. Deleting the message afterwards does not remove it from server-side logs, backups, or the recipient's notification history. The usual workaround is to paste it anyway and hope.
+
+## The solution
+
+Every GitHub account already publishes its SSH public keys at `github.com/<user>.keys`. That is a public key the recipient already controls and can already use. `osm` encrypts to it, and the recipient decrypts with the private key sitting in their `~/.ssh`.
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### Address by username
+
+`osm send alice` fetches Alice's published keys and encrypts to all of them, so she can read the message on any machine she owns.
+
+</td>
+<td width="50%" valign="top">
+
+### Nothing to exchange first
+
+No shared secret, no passphrase over the phone, no keyserver. The only input is a GitHub username.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Inert payload
+
+The output is armored data, never a shell command. A tampered paste cannot execute code on the recipient's machine.
+
+</td>
+<td width="50%" valign="top">
+
+### Ed25519 and RSA
+
+Uses `age` when present, which reaches modern `ssh-ed25519` keys and carries any message size.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Finds the right key
+
+Records the recipient key fingerprint and matches it against local keys, so a non-default filename works without flags.
+
+</td>
+<td width="50%" valign="top">
+
+### One reviewable file
+
+Ships as a single 549-line `dist/osm` with no runtime dependency on sibling files, so a cautious recipient can read it before running it.
+
+</td>
+</tr>
+</table>
+
+## Quick start
+
+### Prerequisites
+
+| Tool | Why | Install |
+|:-----|:----|:--------|
+| `bash` 3.2+ | The tool itself | Preinstalled on macOS and Linux |
+| `curl`, `ssh-keygen`, `openssl` | Key fetch, fingerprints, base64 | Preinstalled on macOS and Linux |
+| [`age`](https://github.com/FiloSottile/age) | The encryption engine | `brew install age` or `apt install age` |
+
+> [!IMPORTANT]
+> Without `age` the tool still works, but falls back to RSA. That path cannot encrypt to an Ed25519 key and caps messages at 470 bytes. Most GitHub accounts publish Ed25519 keys today, so `age` is what makes this useful in practice.
+
+### Setup
+
+```bash
+git clone https://github.com/gufranco/osm.git
+cd osm
+make install
+```
+
+### Verify
+
+```console
+$ osm doctor
+age            ok       v1.3.1
+curl           ok
+ssh-keygen     ok
+openssl        ok       OpenSSL
+identities     ok       1 usable key pair(s) under ~/.ssh
+```
+
+## Usage
+
+| Command | Purpose |
+|:--------|:--------|
+| `osm send <user> [message]` | Encrypt to a GitHub user. Reads stdin when no message argument is given |
+| `osm read [file]` | Decrypt. Reads stdin when no file is given |
+| `osm keys <user>` | List the keys `osm` can encrypt to, with fingerprints |
+| `osm doctor` | Check the local environment and print a remedy for each failure |
+| `osm version` | Print the version and the active engine |
+
+| Flag | Effect |
+|:-----|:-------|
+| `--key <prefix>` | Encrypt to one key only, chosen by fingerprint prefix |
+| `--identity <path>` | Decrypt with a specific private key |
+| `--no-clipboard` | Do not copy the result to the clipboard |
+
+```bash
+printf 'the secret' | osm send alice          # stdin keeps it out of the process list
+osm send alice:iD5CQy 'only to that one key'  # pin one key by fingerprint prefix
+osm read message.txt                          # or pipe it in
+```
+
+> [!TIP]
+> Pipe the secret on stdin rather than passing it as an argument. An argument is visible to every other user on the machine through the process list.
+
+## How it works
+
+```mermaid
+graph LR
+    A["osm send alice"] --> B["GET github.com/alice.keys"]
+    B --> C{"supported key?"}
+    C -- "no" --> D["error naming the key types found"]
+    C -- "yes" --> E{"age installed?"}
+    E -- "yes" --> F["age, any size"]
+    E -- "no, RSA key" --> G["openssl RSA-OAEP, size capped"]
+    E -- "no, Ed25519 key" --> H["error, install age"]
+    F --> I["armored block, header plus base64"]
+    G --> I
+    I --> J["any chat transport"]
+    J --> K["osm read"]
+    K --> L["match fingerprint to a local private key"]
+    L --> M["decrypt, plaintext to stdout"]
+```
+
+### Engines
+
+| Engine | Recipient keys | Size limit | Integrity |
+|:-------|:---------------|:-----------|:----------|
+| `age`, used whenever installed | `ssh-ed25519` and `ssh-rsa` | none in practice | authenticated encryption |
+| `openssl` fallback | `ssh-rsa` only | 470 bytes at 4096-bit, 214 at 2048-bit | confidentiality only, no integrity check |
+
+The fallback exists so a recipient who cannot install anything still receives short secrets. It is strictly worse and `osm send` says so on stderr. It refuses an Ed25519 recipient and refuses an oversized message rather than emitting something broken.
+
+`osm` implements no cryptography of its own. It delegates entirely to `age` or `openssl`.
+
+## What it does not do
+
+> [!WARNING]
+> **There is no sender authentication.** Anyone can encrypt to a public key and claim to be anyone. A message proves only that whoever wrote it knew the recipient's GitHub username. Verify the sender out of band when it matters. Signing is the intended next feature.
+
+| Limit | Detail |
+|:------|:-------|
+| Unauthenticated header | The `to:` and `key:` lines are routing metadata. Altering them causes an identity error, never a wrong plaintext, because the body is authenticated by `age` |
+| Readable by every key on the account | The default lets the recipient read on any device, which also means the message is only as protected as their weakest published key. Pin one with `--key` |
+| GitHub is the trust anchor | An attacker who adds a key to the recipient's account can read messages sent afterwards. `osm send` prints the fingerprint so it can be compared out of band |
+
+## Troubleshooting
+
+<details>
+<summary><strong>decryption failed, and my private key starts with BEGIN OPENSSH PRIVATE KEY</strong></summary>
+<br>
+
+Only the `openssl` fallback needs a PEM key. Convert it, keeping the same public key:
+
+```bash
+ssh-keygen -p -m PEM -f ~/.ssh/id_rsa
+```
+
+</details>
+
+<details>
+<summary><strong>no local private key matches this message</strong></summary>
+<br>
+
+The message was addressed to a key whose private half is not on this machine. `osm` prints the fingerprint it wanted. Compare against your own:
+
+```bash
+ssh-keygen -lf ~/.ssh/*.pub
+```
+
+</details>
+
+<details>
+<summary><strong>publishes no key osm can encrypt to</strong></summary>
+<br>
+
+The account has only ECDSA keys, which neither engine supports. Ask the recipient for an Ed25519 or RSA key.
+
+</details>
+
+<details>
+<summary><strong>I have no key pair yet</strong></summary>
+<br>
+
+Create one and add the public half at [github.com/settings/keys](https://github.com/settings/keys):
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
+```
+
+</details>
+
+## Development
+
+| Command | Description |
+|:--------|:------------|
+| `make check` | Format, lint, test, and the coverage gate |
+| `make build` | Concatenate [`lib/`](lib) into `dist/osm` |
+| `make test` | 70 tests via `bats` |
+| `make cover` | `kcov`, gated at 95% |
+| `make install` | Copy the artifact onto `PATH` |
+
+Sources live in [`lib/`](lib) as 8 modules and are concatenated by [`build.sh`](build.sh) into a single artifact, so the file people install stays reviewable in one pass.
+
+Tests run against real `age` and real `openssl` with real generated keys. The GitHub endpoint is served by a local HTTP server in [`test/helpers/keyserver.py`](test/helpers/keyserver.py), so status codes and `curl` behaviour are genuine rather than stubbed.
+
+| Convention | Source |
+|:-----------|:-------|
+| Commit format | [Conventional Commits](https://www.conventionalcommits.org/) |
+| Shell linting | [`.shellcheckrc`](.shellcheckrc), `enable=all` at zero warnings |
+| Formatting | `shfmt -i 2` |
+| Bash floor | 3.2, so macOS `/bin/bash` is a supported target |
+
+CI runs the suite on Ubuntu and macOS, runs it again under macOS system Bash 3.2, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
+
+## Alternatives
+
+[`ssh-vault`](https://github.com/ssh-vault/ssh-vault) solves the same problem as a compiled binary and is worth using if you would rather not run a shell script. There is also an [open request](https://github.com/cli/cli/issues/12202) to build this capability into `gh` directly.
+
+## License
+
+[MIT](LICENSE)
