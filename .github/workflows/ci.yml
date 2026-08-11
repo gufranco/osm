@@ -21,7 +21,7 @@ jobs:
     name: lint and format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install shfmt
         run: |
@@ -54,7 +54,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
@@ -93,7 +93,7 @@ jobs:
           apt-get update
           apt-get install -y age bats kcov python3 openssh-client openssl curl ca-certificates git
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build the artifact
         run: bash build.sh
@@ -105,7 +105,7 @@ jobs:
     name: encrypt on macOS
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install dependencies
         run: brew install age
@@ -126,7 +126,7 @@ jobs:
             ./dist/osm send alice --no-clipboard < interop/original.txt > interop/message.txt
           shasum -a 256 interop/original.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: interop-bundle
           path: |
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: interop-encrypt
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Install dependencies
         run: |
@@ -151,7 +151,7 @@ jobs:
       - name: Build the artifact
         run: bash build.sh
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: interop-bundle
           path: interop
