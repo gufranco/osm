@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.4.0](https://github.com/gufranco/osm/compare/v1.3.0...v1.4.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* keep the bash completion working on bash 3.2 ([8957f9c](https://github.com/gufranco/osm/commit/8957f9c8c0a023259b7e0b2681fee6b86bdb9251))
+
+
+### Features
+
+* ship a man page, shell completions and a formula ([a25c297](https://github.com/gufranco/osm/commit/a25c297757a24f4dad9917af135d1b5ebd8f211d))
+
 # [1.3.0](https://github.com/gufranco/osm/compare/v1.2.0...v1.3.0) (2026-08-12)
 
 
