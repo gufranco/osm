@@ -19,11 +19,13 @@
 **5** commands · **2** crypto engines · **88** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
-> **Threat model, per [Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
+> **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
 >
-> `osm` is a not-Mossad tool. It keeps your database password out of Slack's retention policy, out of your colleague's notification history, and out of the backup tape nobody remembers exists. That covers the adversary you actually have.
+> `osm` is a not-Mossad tool and it is *excellent* at its job, which is defeating a chat retention policy. Your database password is now safe from the intern with workspace admin, from the backup tape nobody remembers provisioning, and from whoever inherits that channel in 2031. Genuinely useful. Also roughly the security equivalent of locking your car in a neighbourhood where nobody was going to steal it.
 >
-> If your adversary *is* the Mossad, they will read the plaintext off your laptop while you type it, and no amount of Ed25519 is going to help. YOU'RE GONNA DIE AND THERE'S NOTHING THAT YOU CAN DO ABOUT IT. Consider [the security limits](#what-it-does-not-do) accordingly.
+> Against the Mossad, this repository is an elaborate way to feel productive. They will read the plaintext off your screen while `age` is still picking a nonce, and then they will do something to your laptop firmware that has its own Wikipedia article. YOU'RE GONNA DIE AND THERE'S NOTHING THAT YOU CAN DO ABOUT IT. You will, however, die with a 96% covered test suite and a fully POSIX-compliant shell script, which is more than most people manage.
+>
+> The [security limits](#what-it-does-not-do) section is where the honest part lives. Read it before trusting this with anything that would end a career.
 
 ---
 
