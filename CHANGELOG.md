@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.8.0](https://github.com/gufranco/osm/compare/v1.7.0...v1.8.0) (2026-08-12)
+
+
+### Features
+
+* handle keys that live in an ssh agent ([8ac109c](https://github.com/gufranco/osm/commit/8ac109c128b7b650d8eef9d2e856075f2ac4547f))
+
 # [1.7.0](https://github.com/gufranco/osm/compare/v1.6.0...v1.7.0) (2026-08-12)
 
 
