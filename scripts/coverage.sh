@@ -24,7 +24,7 @@ wrapper="${coverage_dir}/osm-instrumented"
 } >"$wrapper"
 chmod 0755 "$wrapper"
 
-OSM_BIN="$wrapper" bats "${root}/test"
+OSM_COVERAGE=1 OSM_BIN="$wrapper" bats "${root}/test"
 
 "$kcov_bin" --merge "$merged_dir" "${runs_dir}"/run-* >/dev/null 2>&1
 

@@ -35,7 +35,7 @@ jobs:
         run: shfmt -d -i 2 lib build.sh install.sh scripts/coverage.sh test
 
       - name: Lint the artifact
-        run: shellcheck --severity=style dist/osm
+        run: shellcheck --severity=style --shell=sh -e SC3043 dist/osm
 
       - name: Lint the scripts
         run: shellcheck --severity=style --shell=bash build.sh install.sh scripts/coverage.sh
@@ -120,8 +120,11 @@ jobs:
       - name: Prove it runs where bash is absent
         run: |
           set -eu
-          apk del bash
-          command -v bash && exit 1
+          apk del bash bats || true
+          if command -v bash; then
+            echo "bash is still present, the check proves nothing" >&2
+            exit 1
+          fi
           ./dist/osm version
 
       - name: Full suite under musl

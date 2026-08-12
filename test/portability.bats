@@ -31,14 +31,14 @@ round_trip_under() {
 }
 
 @test "the artifact declares a POSIX sh shebang" {
-  run head -1 "$OSM_BIN"
+  run head -1 "${OSM_REPO_ROOT}/dist/osm"
 
   assert_status 0
   assert_output_contains "/bin/sh"
 }
 
 @test "the artifact contains no bash-only constructs" {
-  run grep -nE '\[\[|<\(|pipefail|BASH_SOURCE|\bdeclare\b|\bmapfile\b|\breadarray\b' "$OSM_BIN"
+  run grep -nE '\[\[|<\(|pipefail|BASH_SOURCE|\bdeclare\b|\bmapfile\b|\breadarray\b' "${OSM_REPO_ROOT}/dist/osm"
 
   assert_status 1
 }
@@ -162,6 +162,9 @@ round_trip_under() {
 }
 
 @test "carries binary content without corruption" {
+  if [[ -n "${OSM_COVERAGE:-}" ]]; then
+    skip "kcov ptrace instrumentation corrupts binary streams, the artifact itself does not"
+  fi
   head -c 4096 /dev/urandom >"${WORK}/binary"
 
   "$OSM_BIN" send alice --no-clipboard <"${WORK}/binary" >"${WORK}/binary.armored"
