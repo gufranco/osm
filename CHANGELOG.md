@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.2.0](https://github.com/gufranco/osm/compare/v1.1.0...v1.2.0) (2026-08-12)
+
+
+### Features
+
+* sign messages and pin recipient keys ([d9c6197](https://github.com/gufranco/osm/commit/d9c6197ff3abf669d7e7d6e12482f9bbae5865c9))
+
 # [1.1.0](https://github.com/gufranco/osm/compare/v1.0.0...v1.1.0) (2026-08-12)
 
 
