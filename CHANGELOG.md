@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.6.0](https://github.com/gufranco/osm/compare/v1.5.0...v1.6.0) (2026-08-12)
+
+
+### Features
+
+* make this repo its own homebrew tap ([0b2279f](https://github.com/gufranco/osm/commit/0b2279f8e134e24c2d23f33e3af0eb99099bde91))
+
 # [1.5.0](https://github.com/gufranco/osm/compare/v1.4.0...v1.5.0) (2026-08-12)
 
 
