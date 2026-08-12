@@ -17,17 +17,16 @@ osm_warn() {
 }
 
 osm_cleanup() {
-  if [[ -n "$OSM_WORKSPACE" ]]; then
+  if [ -n "$OSM_WORKSPACE" ]; then
     rm -rf "$OSM_WORKSPACE"
     OSM_WORKSPACE=""
   fi
 }
 
 osm_init_workspace() {
-  if [[ -z "$OSM_WORKSPACE" ]]; then
+  if [ -z "$OSM_WORKSPACE" ]; then
     OSM_WORKSPACE=$(mktemp -d "${TMPDIR:-/tmp}/osm-XXXXXX")
     chmod 700 "$OSM_WORKSPACE"
-    trap osm_cleanup EXIT INT TERM HUP
   fi
 }
 

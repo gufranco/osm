@@ -1,6 +1,6 @@
 osm_main() {
-  local command=${1:-}
-  if [[ $# -gt 0 ]]; then
+  local command="${1:-}"
+  if [ $# -gt 0 ]; then
     shift
   fi
   case "$command" in
@@ -14,5 +14,10 @@ osm_main() {
   *) osm_die "unknown command '${command}'. run 'osm help' for usage." ;;
   esac
 }
+
+trap osm_cleanup EXIT
+trap 'osm_cleanup; exit 130' INT
+trap 'osm_cleanup; exit 143' TERM
+trap 'osm_cleanup; exit 129' HUP
 
 osm_main "$@"

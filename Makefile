@@ -28,7 +28,7 @@ fmt-check:
 	shfmt -d -i 2 $(SOURCES) $(TESTS)
 
 lint: build
-	shellcheck --severity=style $(ARTIFACT)
+	shellcheck --severity=style --shell=sh -e SC3043 $(ARTIFACT)
 	shellcheck --severity=style --shell=bash build.sh install.sh scripts/coverage.sh
 	shellcheck --severity=style --shell=bash -e SC2154 $(TESTS)/*.bats $(TESTS)/helpers/*.bash
 

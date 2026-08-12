@@ -1,13 +1,13 @@
 osm_find_identity() {
-  local wanted=$1
+  local wanted="$1"
   local pub priv fingerprint
   for pub in "$HOME"/.ssh/*.pub; do
-    if [[ ! -f "$pub" ]]; then
+    if [ ! -f "$pub" ]; then
       continue
     fi
     fingerprint=$(ssh-keygen -lf "$pub" 2>/dev/null | awk '{print $2}')
     priv="${pub%.pub}"
-    if [[ "$fingerprint" == "$wanted" && -f "$priv" ]]; then
+    if [ "$fingerprint" = "$wanted" ] && [ -f "$priv" ]; then
       printf '%s\n' "$priv"
       return 0
     fi
@@ -16,10 +16,10 @@ osm_find_identity() {
 }
 
 osm_resolve_identity() {
-  local keyfile=$1 override=$2
+  local keyfile="$1" override="$2"
   local fingerprint identity
-  if [[ -n "$override" ]]; then
-    if [[ ! -f "$override" ]]; then
+  if [ -n "$override" ]; then
+    if [ ! -f "$override" ]; then
       osm_die "identity file '${override}' does not exist."
     fi
     printf '%s\n' "$override"

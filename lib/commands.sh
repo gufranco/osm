@@ -1,7 +1,7 @@
 osm_cmd_send() {
   local user="" prefix="" message="" no_clipboard=0 target="" literal=0
-  while [[ $# -gt 0 ]]; do
-    if [[ "$literal" -eq 0 ]]; then
+  while [ $# -gt 0 ]; do
+    if [ "$literal" -eq 0 ]; then
       case "$1" in
       --key)
         prefix=${2:-}
@@ -22,21 +22,24 @@ osm_cmd_send() {
       *) ;;
       esac
     fi
-    if [[ -z "$target" ]]; then target=$1; else message=$1; fi
+    if [ -z "$target" ]; then target=$1; else message=$1; fi
     shift
   done
-  if [[ -z "$target" ]]; then
+  if [ -z "$target" ]; then
     osm_die "usage: osm send <github-user>[:<fingerprint-prefix>] [message]"
   fi
   user=${target%%:*}
-  if [[ "$target" == *:* ]]; then
+  case "$target" in
+  *:*)
     prefix=${target#*:}
-  fi
+    ;;
+  *) ;;
+  esac
   osm_send_run "$user" "$prefix" "$message" "$no_clipboard"
 }
 
 osm_send_run() {
-  local user=$1 prefix=$2 message=$3 no_clipboard=$4
+  local user="$1" prefix="$2" message="$3" no_clipboard="$4"
   local work raw supported selected selected_fps plaintext ciphertext armor alg copier
   osm_init_workspace
   work="$OSM_WORKSPACE"
@@ -51,7 +54,7 @@ osm_send_run() {
   osm_supported_keys "$raw" >"$supported"
   osm_require_keys "$user" "$raw" "$supported"
   osm_select_keys "$supported" "$prefix" "$selected" "$selected_fps"
-  if [[ -n "$prefix" ]]; then
+  if [ -n "$prefix" ]; then
     osm_reject_bad_pin "$user" "$prefix" "$supported" "$selected_fps"
   fi
   osm_read_plaintext "$plaintext" "$message"
@@ -65,7 +68,7 @@ osm_send_run() {
   fi
   osm_emit_armor "$alg" "$user" "$selected_fps" "$ciphertext" >"$armor"
   cat "$armor"
-  if [[ "$no_clipboard" -eq 0 ]]; then
+  if [ "$no_clipboard" -eq 0 ]; then
     if copier=$(osm_clipboard_copy "$armor"); then
       osm_warn "copied to the clipboard with ${copier}."
     else
@@ -76,8 +79,8 @@ osm_send_run() {
 
 osm_cmd_read() {
   local source="" identity_override="" literal=0
-  while [[ $# -gt 0 ]]; do
-    if [[ "$literal" -eq 0 ]]; then
+  while [ $# -gt 0 ]; do
+    if [ "$literal" -eq 0 ]; then
       case "$1" in
       --identity)
         identity_override=${2:-}
@@ -100,24 +103,24 @@ osm_cmd_read() {
 }
 
 osm_read_run() {
-  local source=$1 identity_override=$2
+  local source="$1" identity_override="$2"
   local work input keys ciphertext alg identity
   osm_init_workspace
   work="$OSM_WORKSPACE"
   input="${work}/input"
   keys="${work}/addressed.fps"
   ciphertext="${work}/cipher"
-  if [[ -n "$source" ]]; then
-    if [[ ! -f "$source" ]]; then
+  if [ -n "$source" ]; then
+    if [ ! -f "$source" ]; then
       osm_die "file '${source}' does not exist."
     fi
-    cat "$source" >"$input"
+    tr -d '\r' <"$source" >"$input"
   else
-    cat >"$input"
+    tr -d '\r' >"$input"
   fi
   osm_require_armor "$input"
   osm_armor_field "$input" "key" >"$keys"
-  if [[ ! -s "$keys" ]]; then
+  if [ ! -s "$keys" ]; then
     osm_die "the osm message has no key header, so osm cannot tell which identity to use."
   fi
   alg=$(osm_armor_field "$input" "alg" | head -1)
@@ -138,9 +141,9 @@ osm_read_run() {
 }
 
 osm_cmd_keys() {
-  local user=${1:-}
+  local user="${1:-}"
   local work raw supported
-  if [[ -z "$user" ]]; then
+  if [ -z "$user" ]; then
     osm_die "usage: osm keys <github-user>"
   fi
   osm_init_workspace
@@ -154,7 +157,7 @@ osm_cmd_keys() {
 }
 
 osm_doctor_line() {
-  local label=$1 state=$2 remedy=$3
+  local label="$1" state="$2" remedy="$3"
   printf '%-14s %-8s %s\n' "$label" "$state" "$remedy"
 }
 
@@ -188,7 +191,7 @@ osm_cmd_doctor() {
     ;;
   esac
   osm_doctor_identities
-  if [[ "$failures" -gt 0 ]]; then
+  if [ "$failures" -gt 0 ]; then
     exit 1
   fi
 }
@@ -196,11 +199,11 @@ osm_cmd_doctor() {
 osm_doctor_identities() {
   local pub count=0
   for pub in "$HOME"/.ssh/*.pub; do
-    if [[ -f "$pub" && -f "${pub%.pub}" ]]; then
+    if [ -f "$pub" ] && [ -f "${pub%.pub}" ]; then
       count=$((count + 1))
     fi
   done
-  if [[ "$count" -gt 0 ]]; then
+  if [ "$count" -gt 0 ]; then
     osm_doctor_line "identities" "ok" "${count} usable key pair(s) under ~/.ssh"
   else
     osm_doctor_line "identities" "warn" "no key pair found under ~/.ssh. you can receive nothing until you add one"

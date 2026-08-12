@@ -5,7 +5,7 @@
 [![ci](https://github.com/gufranco/osm/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/osm/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)](#development)
-[![shell](https://img.shields.io/badge/bash-3.2%2B-lightgrey)](#quick-start)
+[![shell](https://img.shields.io/badge/shell-POSIX%20sh-lightgrey)](#portability)
 
 <p align="center">
   <a href="#quick-start"><strong>Quick start</strong></a> &nbsp;|&nbsp;
@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **70** tests · **96%** coverage · **macOS + Linux** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **88** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, per [Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -117,7 +117,7 @@ Ships as a single 549-line `dist/osm` with no runtime dependency on sibling file
 
 | Tool | Why | Install |
 |:-----|:----|:--------|
-| `bash` 3.2+ | The tool itself | Preinstalled on macOS and Linux |
+| POSIX `sh` | The tool itself | Preinstalled everywhere. `bash` is not required |
 | `curl`, `ssh-keygen`, `openssl` | Key fetch, fingerprints, base64 | Preinstalled on macOS and Linux |
 | [`age`](https://github.com/FiloSottile/age) | The encryption engine | `brew install age` or `apt install age` |
 
@@ -276,7 +276,24 @@ Tests run against real `age` and real `openssl` with real generated keys. The Gi
 | Formatting | `shfmt -i 2` |
 | Bash floor | 3.2, so macOS `/bin/bash` is a supported target |
 
-CI runs the suite on Ubuntu and macOS, runs it again under macOS system Bash 3.2, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
+CI runs the suite on Ubuntu and macOS, runs it again under macOS system Bash 3.2, replays it across every POSIX shell dialect, runs it on Alpine with `bash` uninstalled to prove nothing depends on it, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
+
+## Portability
+
+The shipped artifact is POSIX `sh` with no bash-only constructs. Every row below was verified by a full encrypt-and-decrypt round trip, not by inspection.
+
+| Shell | Status |
+|:------|:-------|
+| `dash`, `busybox ash`, `posh` | round trip verified |
+| `bash` 3.2 and 5.x, `zsh`, `mksh` | round trip verified |
+| `ksh93` | not supported. It lacks `local`, which every other `/bin/sh` provides. No BSD or macOS ships ksh93 as `/bin/sh` |
+
+| System | Status |
+|:-------|:-------|
+| macOS | verified, including stock `/bin/sh` and LibreSSL |
+| Linux, glibc | verified on Debian and Ubuntu |
+| Linux, musl | verified on Alpine with `bash` removed entirely |
+| FreeBSD, OpenBSD, NetBSD | expected to work. Their `/bin/sh` supports every construct used here, but no CI runner covers them yet |
 
 ## Alternatives
 

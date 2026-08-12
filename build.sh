@@ -13,8 +13,8 @@ fi
 mkdir -p "${root}/dist"
 
 {
-  printf '#!/usr/bin/env bash\n'
-  printf 'set -euo pipefail\n'
+  printf '#!/bin/sh\n'
+  printf 'set -eu\n'
   for part in "${root}"/lib/*.sh; do
     if [[ "$part" == "$entrypoint" ]]; then
       continue

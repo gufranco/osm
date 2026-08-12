@@ -83,6 +83,52 @@ jobs:
         if: runner.os == 'macOS'
         run: /bin/bash -c 'bats --print-output-on-failure test'
 
+  shells:
+    name: posix shell conformance
+    runs-on: ubuntu-latest
+    container: debian:stable-slim
+    steps:
+      - name: Install shells and dependencies
+        run: |
+          apt-get update
+          apt-get install -y age openssh-client openssl curl python3 ca-certificates git bats
+          for shell in dash mksh ksh posh zsh busybox-static; do
+            apt-get install -y "$shell" || echo "skipping unavailable shell: $shell"
+          done
+
+      - uses: actions/checkout@v7
+
+      - name: Build the artifact
+        run: bash build.sh
+
+      - name: Round trip under every installed shell dialect
+        run: bats --print-output-on-failure test/portability.bats
+
+  musl:
+    name: musl and busybox
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    steps:
+      - name: Install dependencies
+        run: apk add --no-cache age openssh-keygen openssl curl python3 bash bats git
+
+      - uses: actions/checkout@v7
+
+      - name: Build the artifact
+        run: bash build.sh
+
+      - name: Prove it runs where bash is absent
+        run: |
+          set -eu
+          apk del bash
+          command -v bash && exit 1
+          ./dist/osm version
+
+      - name: Full suite under musl
+        run: |
+          apk add --no-cache bash
+          bats --print-output-on-failure test
+
   coverage:
     name: coverage gate
     runs-on: ubuntu-latest
@@ -170,7 +216,7 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-latest
-    needs: [lint, test, coverage, interop-decrypt]
+    needs: [lint, test, shells, musl, coverage, interop-decrypt]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write

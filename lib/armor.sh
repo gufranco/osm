@@ -1,5 +1,5 @@
 osm_emit_armor() {
-  local alg=$1 user=$2 selected_fps=$3 ciphertext=$4
+  local alg="$1" user="$2" selected_fps="$3" ciphertext="$4"
   local fingerprint
   printf '%s\n' "$OSM_ARMOR_BEGIN"
   printf 'v: %s\n' "$OSM_FORMAT_VERSION"
@@ -14,7 +14,7 @@ osm_emit_armor() {
 }
 
 # shellcheck disable=SC2016
-OSM_AWK_FIELD='BEGIN{p=want": "} $0=="-----END OSM MESSAGE-----"{exit} /^$/{b=1} !b&&index($0,p)==1{print substr($0,length(p)+1)}'
+OSM_AWK_FIELD='BEGIN{p=want": "} /^-----BEGIN OSM MESSAGE-----$/{s=1;b=0;next} !s{next} $0=="-----END OSM MESSAGE-----"{exit} /^$/{b=1} !b&&index($0,p)==1{print substr($0,length(p)+1)}'
 OSM_AWK_BODY='/^-----BEGIN OSM MESSAGE-----$/{s=1;next} !s{next} /^-----END OSM MESSAGE-----$/{exit} b{print} /^$/{b=1}'
 
 osm_armor_field() {
@@ -26,7 +26,7 @@ osm_armor_body() {
 }
 
 osm_require_armor() {
-  local file=$1
+  local file="$1"
   if ! grep -q -- "$OSM_ARMOR_BEGIN" "$file"; then
     osm_die "input does not contain an osm message. expected a block starting with ${OSM_ARMOR_BEGIN}"
   fi
