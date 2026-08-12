@@ -131,6 +131,9 @@ setup() {
 }
 
 @test "recognises a key held only by the ssh agent" {
+  if ! command -v ssh-agent >/dev/null 2>&1 || ! command -v ssh-add >/dev/null 2>&1; then
+    skip "this machine has no ssh-agent to hold a key in"
+  fi
   local agentkey="${WORK}/agentonly"
   ssh-keygen -q -t ed25519 -N '' -f "$agentkey" </dev/null
   fixture_publish_keys "$SERVED" "agentuser" "${agentkey}.pub"
