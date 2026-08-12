@@ -1,6 +1,6 @@
 osm_cmd_send() {
   local prefix="" message="" no_clipboard=0 target="" literal=0
-  local targets="" keyfiles="" as_json=0
+  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -26,6 +26,16 @@ osm_cmd_send() {
         ;;
       --json)
         as_json=1
+        shift
+        continue
+        ;;
+      --sign)
+        sign_as=${2:-}
+        shift 2
+        continue
+        ;;
+      --accept-new-key)
+        accept_new=1
         shift
         continue
         ;;
@@ -60,12 +70,14 @@ ${targets}"
   if [ -z "$targets" ] && [ -z "$keyfiles" ]; then
     osm_die "usage: osm send <user>[@host][:<fingerprint-prefix>] [message]"
   fi
-  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json"
+  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new"
 }
 
 osm_send_run() {
   local targets="$1" keyfiles="$2" prefix="$3" message="$4" no_clipboard="$5" as_json="$6"
+  local sign_as="$7" accept_new="$8"
   local work supported selected selected_fps plaintext ciphertext armor alg copier tofile
+  local sigfile="" signature=""
   osm_init_workspace
   work="$OSM_WORKSPACE"
   supported="${work}/supported.keys"
@@ -75,7 +87,7 @@ osm_send_run() {
   ciphertext="${work}/cipher"
   armor="${work}/armor"
   tofile="${work}/recipients"
-  osm_collect_recipients "$targets" "$keyfiles" "$supported" "$tofile" "$work"
+  osm_collect_recipients "$targets" "$keyfiles" "$supported" "$tofile" "$work" "$accept_new"
   osm_select_keys "$supported" "$prefix" "$selected" "$selected_fps"
   if [ -n "$prefix" ]; then
     osm_reject_bad_pin "$(head -1 "$tofile")" "$prefix" "$supported" "$selected_fps"
@@ -89,7 +101,12 @@ osm_send_run() {
     osm_warn "age is not installed. falling back to RSA, which is size limited and provides no integrity check."
     osm_encrypt_openssl "$selected" "$plaintext" "$ciphertext" "$work"
   fi
-  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" >"$armor"
+  if [ -n "$sign_as" ]; then
+    sigfile="${work}/signature"
+    osm_sign_ciphertext "$(osm_sign_identity "$sign_as" "$work")" "$ciphertext" "$sigfile"
+    signature=$(openssl base64 -A -in "$sigfile")
+  fi
+  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" >"$armor"
   if [ "$as_json" -eq 1 ]; then
     osm_emit_json "$alg" "$tofile" "$selected_fps" "$armor"
   else
@@ -105,7 +122,7 @@ osm_send_run() {
 }
 
 osm_collect_recipients() {
-  local targets="$1" keyfiles="$2" supported="$3" tofile="$4" work="$5"
+  local targets="$1" keyfiles="$2" supported="$3" tofile="$4" work="$5" accept_new="$6"
   local target keyfile raw one count
   : >"$supported"
   : >"$tofile"
@@ -116,6 +133,8 @@ osm_collect_recipients() {
     osm_fetch_keys "$target" "$raw"
     osm_supported_keys "$raw" >"$one"
     osm_require_keys "$target" "$raw" "$one"
+    osm_fingerprints "$one" >"${one}.fps"
+    osm_trust_check "$target" "${one}.fps" "$accept_new"
     cat "$one" >>"$supported"
     printf '%s\n' "$target" >>"$tofile"
   done
@@ -134,7 +153,7 @@ osm_collect_recipients() {
 }
 
 osm_cmd_read() {
-  local source="" identity_override="" literal=0 from_clipboard=0
+  local source="" identity_override="" literal=0 from_clipboard=0 require_sig=0
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -145,6 +164,11 @@ osm_cmd_read() {
         ;;
       --clipboard)
         from_clipboard=1
+        shift
+        continue
+        ;;
+      --require-signature)
+        require_sig=1
         shift
         continue
         ;;
@@ -160,12 +184,12 @@ osm_cmd_read() {
     source=$1
     shift
   done
-  osm_read_run "$source" "$identity_override" "$from_clipboard"
+  osm_read_run "$source" "$identity_override" "$from_clipboard" "$require_sig"
 }
 
 osm_read_run() {
-  local source="$1" identity_override="$2" from_clipboard="$3"
-  local work input keys ciphertext alg identity
+  local source="$1" identity_override="$2" from_clipboard="$3" require_sig="$4"
+  local work input keys ciphertext alg identity from signature sigfile
   osm_init_workspace
   work="$OSM_WORKSPACE"
   input="${work}/input"
@@ -193,6 +217,15 @@ osm_read_run() {
   alg=$(osm_armor_field "$input" "alg" | head -1)
   if ! osm_armor_body "$input" | tr -d '\n' | openssl base64 -d -A -out "$ciphertext" 2>/dev/null; then
     osm_die "the message body is not valid base64. the paste may be incomplete."
+  fi
+  from=$(osm_armor_field "$input" "from" | head -1)
+  signature=$(osm_armor_field "$input" "sig" | head -1)
+  if [ -n "$from" ] && [ -n "$signature" ]; then
+    sigfile="${work}/signature"
+    printf '%s' "$signature" | openssl base64 -d -A -out "$sigfile"
+    osm_verify_signature "$from" "$ciphertext" "$sigfile" "$work"
+  elif [ "$require_sig" -eq 1 ]; then
+    osm_die "this message carries no signature and --require-signature was given."
   fi
   identity=$(osm_resolve_identity "$keys" "$identity_override")
   case "$alg" in
@@ -302,8 +335,11 @@ options:
   --keys-file <path>  add recipients from a local public key file
   --key <prefix>      encrypt to one key only, chosen by fingerprint prefix
   --json              print machine readable output
+  --sign <you>        sign as a user whose published key you hold
+  --accept-new-key    accept a recipient whose pinned keys changed
   --identity <path>   decrypt with a specific private key
   --clipboard         read the message from the clipboard
+  --require-signature refuse a message that carries no signature
   --no-clipboard      do not copy the result to the clipboard
 
 hosts:
@@ -319,6 +355,7 @@ examples:
   osm send alice 'database password: correct-horse'
   osm send bob@gitlab 'works across forges'
   osm send --to alice --to bob@codeberg 'one message, two people'
+  osm send --sign you alice 'signed, so alice knows it came from you'
   printf 'secret' | osm send alice
   pbpaste | osm read
   osm read message.txt

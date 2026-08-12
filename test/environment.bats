@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/home/.ssh" "${WORK}/nokeys/.ssh"
   fixture_generate_ed25519 "${WORK}/home/.ssh" "id_ed25519"
@@ -18,7 +19,7 @@ setup_file() {
   ODD="$(sandbox_path_excluding "${WORK}/bin-odd" openssl)"
   printf '%s\n' '#!/usr/bin/env bash' 'printf "WeirdSSL 9.9\n"' >"${ODD}/openssl"
   chmod +x "${ODD}/openssl"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID NO_OPENSSL NO_CURL NO_KEYGEN LIBRE ODD
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME NO_OPENSSL NO_CURL NO_KEYGEN LIBRE ODD
 }
 
 teardown_file() {

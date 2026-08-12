@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/home/.ssh" "${WORK}/stranger/.ssh"
   fixture_generate_ed25519 "${WORK}/home/.ssh" "id_ed25519_personal"
@@ -12,7 +13,7 @@ setup_file() {
   keyserver_start "$SERVED"
   ADDRESSED="$(fixture_fingerprint "${WORK}/home/.ssh/id_ed25519_personal.pub")"
   HOME="${WORK}/home" "$OSM_BIN" send alice 'the recovered secret' --no-clipboard >"${WORK}/message"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID ADDRESSED
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME ADDRESSED
 }
 
 teardown_file() {

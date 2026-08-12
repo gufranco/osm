@@ -4,12 +4,13 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/.ssh"
   fixture_generate_ed25519 "${WORK}/.ssh" "id_ed25519"
   fixture_publish_keys "$SERVED" "alice" "${WORK}/.ssh/id_ed25519.pub"
   keyserver_start "$SERVED"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME
 }
 
 teardown_file() {

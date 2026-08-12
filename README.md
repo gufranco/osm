@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **4** key hosts · **104** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **4** key hosts · **116** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -158,6 +158,9 @@ identities     ok       1 usable key pair(s) under ~/.ssh
 | Flag | Effect |
 |:-----|:-------|
 | `--to <target>` | Add a recipient. Repeat for several |
+| `--sign <you>` | Sign as a user whose published key you hold |
+| `--accept-new-key` | Accept a recipient whose pinned keys changed |
+| `--require-signature` | On read, refuse a message that carries no signature |
 | `--keys-file <path>` | Add recipients from a local public key file |
 | `--key <prefix>` | Encrypt to one key only, chosen by fingerprint prefix |
 | `--json` | Print machine readable output |
@@ -219,13 +222,13 @@ The fallback exists so a recipient who cannot install anything still receives sh
 ## What it does not do
 
 > [!WARNING]
-> **There is no sender authentication.** Anyone can encrypt to a public key and claim to be anyone. A message proves only that whoever wrote it knew the recipient's GitHub username. Verify the sender out of band when it matters. Signing is the intended next feature.
+> **An unsigned message proves nothing about who sent it.** Anyone can encrypt to a public key and claim to be anyone. Sign with `--sign <you>` and the recipient can verify it, or refuse unsigned messages entirely with `--require-signature`. Without that, treat the sender as unverified.
 
 | Limit | Detail |
 |:------|:-------|
 | Unauthenticated header | The `to:` and `key:` lines are routing metadata. Altering them causes an identity error, never a wrong plaintext, because the body is authenticated by `age` |
 | Readable by every key on the account | The default lets the recipient read on any device, which also means the message is only as protected as their weakest published key. Pin one with `--key` |
-| GitHub is the trust anchor | An attacker who adds a key to the recipient's account can read messages sent afterwards. `osm send` prints the fingerprint so it can be compared out of band |
+| The forge is the trust anchor | An attacker who adds a key to the recipient's account can read messages sent afterwards. osm pins the fingerprints it saw the first time and refuses to send if they change, which turns a silent takeover into a loud one |
 
 ## Troubleshooting
 
@@ -295,6 +298,33 @@ Tests run against real `age` and real `openssl` with real generated keys. The Gi
 | Bash floor | 3.2, so macOS `/bin/bash` is a supported target |
 
 CI runs the suite on Ubuntu and macOS, runs it again under macOS system Bash 3.2, replays it across every POSIX shell dialect, runs it on Alpine with `bash` uninstalled to prove nothing depends on it, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
+
+## Signing
+
+An unsigned message is confidential but anonymous. Signing closes that gap using the same SSH key the sender already publishes.
+
+```console
+$ osm send alice --sign you 'this really is from me'
+
+$ osm read message.txt
+osm: signature verified against a key published by 'you'.
+this really is from me
+```
+
+The signature covers the ciphertext and is verified with `ssh-keygen -Y verify` against the keys the claimed sender publishes. A tampered body, or a `from:` swapped to someone else, fails verification and no plaintext is printed. Use `--require-signature` on read to refuse anything unsigned.
+
+## Key pinning
+
+The first message to someone records their fingerprints under `${XDG_CONFIG_HOME:-~/.config}/osm/known_recipients`. If those keys later change, the send stops:
+
+```console
+$ osm send alice 'secret'
+osm: the keys published by alice changed since you last messaged them.
+  pinned:  SHA256:Hb2u7V4cmzORXDF0QulbVVq83T/B6AfX+64LPZS64n0
+  current: SHA256:6FV5K276oVndQJv5uxtytvD/KIrimmU/SmWvEgmmdIo
+  a key rotation looks exactly like an account takeover from here.
+  verify the fingerprint with them out of band, then re-run with --accept-new-key
+```
 
 ## Portability
 

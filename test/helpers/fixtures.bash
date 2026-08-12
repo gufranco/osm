@@ -5,6 +5,7 @@ OSM_BIN="${OSM_BIN:-${OSM_REPO_ROOT}/dist/osm}"
 fixture_workspace() {
   local dir
   dir="$(mktemp -d "${TMPDIR:-/tmp}/osm-test-XXXXXX")"
+  mkdir -p "${dir}/config"
   printf '%s\n' "$dir"
 }
 

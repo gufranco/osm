@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/keys"
   fixture_generate_ed25519 "${WORK}/keys" "one"
@@ -18,7 +19,7 @@ setup_file() {
   keyserver_start "$SERVED"
   FP_ONE="$(fixture_fingerprint "${WORK}/keys/one.pub")"
   FP_TWO="$(fixture_fingerprint "${WORK}/keys/two.pub")"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID FP_ONE FP_TWO
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME FP_ONE FP_TWO
 }
 
 teardown_file() {

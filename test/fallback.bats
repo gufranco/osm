@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/home/.ssh"
   fixture_generate_rsa_pem "${WORK}/home/.ssh" "id_rsa" 2048
@@ -14,7 +15,7 @@ setup_file() {
   fixture_publish_keys "$SERVED" "curveuser" "${WORK}/home/.ssh/id_ed25519.pub"
   keyserver_start "$SERVED"
   NOAGE="$(sandbox_path_excluding "${WORK}/bin-noage" age)"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID NOAGE
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME NOAGE
 }
 
 teardown_file() {

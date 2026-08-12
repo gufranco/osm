@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/home/.ssh" "${WORK}/scratch"
   fixture_generate_ed25519 "${WORK}/home/.ssh" "id_ed25519"
@@ -12,7 +13,7 @@ setup_file() {
   FAKEBIN="$(sandbox_path_excluding "${WORK}/bin-fake" none)"
   printf '#!/usr/bin/env bash\ncat >"%s/clipboard"\n' "$WORK" >"${FAKEBIN}/pbcopy"
   chmod +x "${FAKEBIN}/pbcopy"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID FAKEBIN
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME FAKEBIN
 }
 
 teardown_file() {

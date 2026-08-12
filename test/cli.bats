@@ -4,6 +4,7 @@ load helpers/assertions
 setup_file() {
   load helpers/fixtures
   WORK="$(fixture_workspace)"
+  XDG_CONFIG_HOME="${WORK}/config"
   SERVED="${WORK}/served"
   mkdir -p "$SERVED" "${WORK}/home/.ssh" "${WORK}/bare/.ssh"
   fixture_generate_ed25519 "${WORK}/home/.ssh" "id_ed25519"
@@ -11,7 +12,7 @@ setup_file() {
   keyserver_start "$SERVED"
   NOAGE="$(sandbox_path_excluding "${WORK}/bin-noage" age)"
   NOCLIP="$(sandbox_path_excluding "${WORK}/bin-noclip" none)"
-  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID NOAGE NOCLIP
+  export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME NOAGE NOCLIP
 }
 
 teardown_file() {
