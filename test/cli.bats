@@ -187,7 +187,7 @@ run_read_on_tty() {
 }
 
 @test "the bash completion offers every command" {
-  run bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm ''); COMP_CWORD=1; _osm; printf '%s' \"\${COMPREPLY[*]}\""
+  run /bin/bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm ''); COMP_CWORD=1; _osm; printf '%s' \"\${COMPREPLY[*]}\""
 
   assert_status 0
   assert_output_contains "send"
@@ -195,7 +195,7 @@ run_read_on_tty() {
 }
 
 @test "the bash completion offers the send flags" {
-  run bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm send --); COMP_CWORD=2; _osm; printf '%s' \"\${COMPREPLY[*]}\""
+  run /bin/bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm send --); COMP_CWORD=2; _osm; printf '%s' \"\${COMPREPLY[*]}\""
 
   assert_status 0
   assert_output_contains "--sign"
