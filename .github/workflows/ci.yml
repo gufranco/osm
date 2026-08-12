@@ -129,7 +129,7 @@ jobs:
 
       - name: Full suite under musl
         run: |
-          apk add --no-cache bash
+          apk add --no-cache bash bats
           bats --print-output-on-failure test
 
   coverage:
