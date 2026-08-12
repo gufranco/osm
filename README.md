@@ -318,7 +318,7 @@ Tests run against real `age` and real `openssl` with real generated keys. The Gi
 | Formatting | `shfmt -i 2` |
 | Bash floor | 3.2, so macOS `/bin/bash` is a supported target |
 
-CI runs the suite on Ubuntu and macOS, runs it again under macOS system Bash 3.2, replays it across every POSIX shell dialect, runs it on Alpine with `bash` uninstalled to prove nothing depends on it, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
+CI targets Linux and macOS. It runs the suite on Ubuntu and on macOS Tahoe for both Apple Silicon and Intel, runs it again under macOS system Bash 3.2, replays it across every POSIX shell dialect in a container, runs it on Alpine with `bash` uninstalled to prove nothing depends on it, enforces the coverage gate, and performs a real cross-platform check: it encrypts on a macOS runner and decrypts on a Linux runner, comparing checksums.
 
 ## Signing
 
@@ -374,7 +374,7 @@ The shipped artifact is POSIX `sh` with no bash-only constructs. Every row below
 | macOS | verified on Tahoe, both Apple Silicon and Intel, including stock `/bin/sh` and LibreSSL |
 | Linux, glibc | verified on Debian and Ubuntu |
 | Linux, musl | verified on Alpine with `bash` removed entirely |
-| FreeBSD, OpenBSD, NetBSD | verified in CI. Each runs a full encrypt-and-decrypt round trip inside a real guest VM. These jobs are non-blocking, because they depend on a third-party VM image download that occasionally returns 503, and a release should not hinge on that |
+| FreeBSD, OpenBSD, NetBSD | not covered by CI. The artifact is POSIX `sh` and their `/bin/sh` supports every construct it uses, and an OpenBSD guest did pass a full round trip while the jobs existed, but nothing verifies this on an ongoing basis |
 
 ## Alternatives
 

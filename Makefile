@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 ARTIFACT := dist/osm
-SOURCES := lib build.sh install.sh scripts/coverage.sh scripts/bsd-check.sh scripts/set-version.sh
+SOURCES := lib build.sh install.sh scripts/coverage.sh scripts/set-version.sh
 TESTS := test
 COVERAGE_DIR := coverage
 COVERAGE_MIN := 91
@@ -30,7 +30,6 @@ fmt-check:
 lint: build
 	shellcheck --severity=style --shell=sh -e SC3043 $(ARTIFACT)
 	shellcheck --severity=style --shell=bash build.sh install.sh scripts/coverage.sh scripts/set-version.sh scripts/update-formula.sh scripts/publish-formula.sh
-	shellcheck --severity=style --shell=sh scripts/bsd-check.sh
 	shellcheck --severity=style --shell=bash completions/osm.bash
 	shellcheck --severity=style --shell=bash -e SC2154 $(TESTS)/*.bats $(TESTS)/helpers/*.bash
 
