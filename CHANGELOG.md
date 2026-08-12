@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.3.0](https://github.com/gufranco/osm/compare/v1.2.0...v1.3.0) (2026-08-12)
+
+
+### Features
+
+* compress payloads, flag weak keys, expire the clipboard ([13cab1e](https://github.com/gufranco/osm/commit/13cab1e061a46417693a9ce427d348fe8667a2c2))
+
 # [1.2.0](https://github.com/gufranco/osm/compare/v1.1.0...v1.2.0) (2026-08-12)
 
 
