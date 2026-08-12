@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **4** key hosts · **125** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **4** key hosts · **129** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -129,10 +129,18 @@ Ships as a single 549-line `dist/osm` with no runtime dependency on sibling file
 ### Setup
 
 ```bash
+brew install gufranco/tap/osm            # once the tap is published
+```
+
+Or from source, which also installs the man page and shell completions:
+
+```bash
 git clone https://github.com/gufranco/osm.git
 cd osm
 make install
 ```
+
+Every release also attaches a ready-to-run `dist/osm` to the [GitHub release](https://github.com/gufranco/osm/releases), so a recipient can download one file, read it, and run it.
 
 ### Verify
 
@@ -285,7 +293,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 | `make build` | Concatenate [`lib/`](lib) into `dist/osm` |
 | `make test` | 70 tests via `bats` |
 | `make cover` | `kcov`, gated at 93% |
-| `make install` | Copy the artifact onto `PATH` |
+| `make install` | Copy the artifact, man page and completions into place |
 
 Sources live in [`lib/`](lib) as 8 modules and are concatenated by [`build.sh`](build.sh) into a single artifact, so the file people install stays reviewable in one pass.
 

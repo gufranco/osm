@@ -1,0 +1,115 @@
+.TH OSM 1 "2026-08-12" "osm" "User Commands"
+.SH NAME
+osm \- send encrypted messages through any chat, using published SSH keys
+.SH SYNOPSIS
+.B osm send
+.RI [ user "[@" host "][:" fingerprint-prefix "]] [" message ]
+.br
+.B osm read
+.RI [ file ]
+.br
+.B osm keys
+.RI  user [@ host ]
+.br
+.B osm doctor
+.br
+.B osm version
+.SH DESCRIPTION
+.B osm
+encrypts a short secret to a recipient identified by their account on a code
+forge, using the SSH public key that account already publishes. The recipient
+decrypts with the private key they already hold. Nothing is exchanged in
+advance and no keyserver is involved.
+.PP
+The output is an inert armored block. It is never a shell command, so a
+tampered paste cannot execute code on the recipient's machine.
+.SH COMMANDS
+.TP
+.B send
+Encrypt to one or more recipients. Reads the message on standard input when no
+message argument is given, which keeps it out of the process list.
+.TP
+.B read
+Decrypt. Reads standard input when piped, a file when given one, and otherwise
+the clipboard.
+.TP
+.B keys
+List the keys osm can encrypt to for an account, with fingerprints.
+.TP
+.B doctor
+Report the state of every dependency and print a remedy for each failure.
+.SH OPTIONS
+.TP
+.BI \-\-to " target"
+Add a recipient. Repeat for several.
+.TP
+.BI \-\-keys\-file " path"
+Add recipients from a local public key file.
+.TP
+.BI \-\-key " prefix"
+Encrypt to one key only, chosen by fingerprint prefix.
+.TP
+.BI \-\-sign " user"
+Sign as a user whose published key you hold.
+.TP
+.B \-\-accept\-new\-key
+Accept a recipient whose pinned fingerprints changed.
+.TP
+.B \-\-json
+Print machine readable output.
+.TP
+.B \-\-qr
+Print the message as a QR code instead of text.
+.TP
+.B \-\-no\-clipboard
+Do not copy the result to the clipboard.
+.TP
+.BI \-\-identity " path"
+Decrypt with a specific private key.
+.TP
+.B \-\-clipboard
+Read the message from the clipboard.
+.TP
+.B \-\-require\-signature
+Refuse a message that carries no signature.
+.SH HOSTS
+.B github
+is the default.
+.BR gitlab ,
+.B codeberg
+and
+.B sourcehut
+are known. Any other value is treated as a self-hosted forge serving
+.IR host / user .keys.
+Bitbucket publishes no public key endpoint, so use
+.B \-\-keys\-file
+for it.
+.SH ENVIRONMENT
+.TP
+.B OSM_MIN_RSA_BITS
+Minimum RSA key size before a warning. Default 3072.
+.TP
+.B OSM_CLIPBOARD_TIMEOUT
+Seconds before the clipboard is cleared. 0 disables. Default 90.
+.TP
+.B OSM_HTTP_TIMEOUT
+Seconds before a key fetch times out. Default 10.
+.TP
+.B XDG_CONFIG_HOME
+Where pinned recipient fingerprints are stored. Defaults to ~/.config.
+.SH SECURITY
+An unsigned message is confidential but anonymous. Anyone can encrypt to a
+public key and claim to be anyone. Sign with
+.B \-\-sign
+so the recipient can verify, or refuse unsigned messages with
+.BR \-\-require\-signature .
+.PP
+The forge is the trust anchor. osm pins the fingerprints it saw on first
+contact and refuses to send if they change, so an account takeover is loud
+rather than silent.
+.SH EXIT STATUS
+Zero on success, non-zero on any failure. No plaintext is printed when a
+signature fails to verify.
+.SH SEE ALSO
+.BR age (1),
+.BR ssh-keygen (1)

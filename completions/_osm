@@ -1,0 +1,41 @@
+#compdef osm
+
+_osm() {
+  local -a commands
+  commands=(
+    'send:encrypt a message to a user'
+    'read:decrypt a message'
+    'keys:list the keys a user publishes'
+    'doctor:check the local environment'
+    'version:print the version and engine'
+    'help:print usage'
+  )
+
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+    return
+  fi
+
+  case "${words[2]}" in
+    send)
+      _arguments \
+        '*--to[add a recipient]:target:' \
+        '*--keys-file[add recipients from a public key file]:file:_files' \
+        '--key[pin one key by fingerprint prefix]:prefix:' \
+        '--sign[sign as a user you hold a key for]:user:' \
+        '--json[print machine readable output]' \
+        '--qr[print the message as a QR code]' \
+        '--accept-new-key[accept changed recipient keys]' \
+        '--no-clipboard[do not copy to the clipboard]'
+      ;;
+    read)
+      _arguments \
+        '--identity[decrypt with a specific private key]:file:_files' \
+        '--clipboard[read the message from the clipboard]' \
+        '--require-signature[refuse an unsigned message]' \
+        '*:file:_files'
+      ;;
+  esac
+}
+
+_osm "$@"

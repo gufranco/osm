@@ -185,3 +185,39 @@ run_read_on_tty() {
   assert_status 1
   assert_output_contains "nothing to read"
 }
+
+@test "the bash completion offers every command" {
+  run bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm ''); COMP_CWORD=1; _osm; printf '%s' \"\${COMPREPLY[*]}\""
+
+  assert_status 0
+  assert_output_contains "send"
+  assert_output_contains "doctor"
+}
+
+@test "the bash completion offers the send flags" {
+  run bash -c "source '${OSM_REPO_ROOT}/completions/osm.bash'; COMP_WORDS=(osm send --); COMP_CWORD=2; _osm; printf '%s' \"\${COMPREPLY[*]}\""
+
+  assert_status 0
+  assert_output_contains "--sign"
+  assert_output_contains "--keys-file"
+}
+
+@test "the man page passes mandoc lint" {
+  if ! command -v mandoc >/dev/null 2>&1; then
+    skip "mandoc is not installed on this machine"
+  fi
+
+  run mandoc -T lint "${OSM_REPO_ROOT}/man/osm.1"
+
+  assert_status 0
+}
+
+@test "every documented flag appears in the usage text" {
+  run "$OSM_BIN" help
+
+  assert_status 0
+  assert_output_contains "--sign"
+  assert_output_contains "--require-signature"
+  assert_output_contains "--qr"
+  assert_output_contains "--keys-file"
+}
