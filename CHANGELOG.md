@@ -1,5 +1,12 @@
 # Changelog
 
+# [1.1.0](https://github.com/gufranco/osm/compare/v1.0.0...v1.1.0) (2026-08-12)
+
+
+### Features
+
+* reach recipients beyond GitHub, and several at once ([ff35eec](https://github.com/gufranco/osm/commit/ff35eecbd82683c9b0af0d73392983e959f86344))
+
 # 1.0.0 (2026-08-12)
 
 
