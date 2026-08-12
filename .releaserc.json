@@ -1,0 +1,38 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "bash scripts/set-version.sh ${nextRelease.version}"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "lib/core.sh"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/osm",
+            "label": "osm ${nextRelease.gitTag} (single-file executable)"
+          }
+        ]
+      }
+    ]
+  ]
+}
