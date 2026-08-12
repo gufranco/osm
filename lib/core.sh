@@ -8,6 +8,8 @@ OSM_OAEP_OVERHEAD=42
 OSM_SIG_NAMESPACE="osm"
 OSM_MIN_RSA_BITS="${OSM_MIN_RSA_BITS:-3072}"
 OSM_CLIPBOARD_TIMEOUT="${OSM_CLIPBOARD_TIMEOUT:-90}"
+OSM_CLIPBOARD_COPY="${OSM_CLIPBOARD_COPY:-}"
+OSM_CLIPBOARD_PASTE="${OSM_CLIPBOARD_PASTE:-}"
 OSM_WORKSPACE=""
 
 osm_die() {
@@ -49,4 +51,18 @@ osm_openssl_flavor() {
   OpenSSL*) printf 'openssl\n' ;;
   *) printf 'unknown\n' ;;
   esac
+}
+
+osm_probe_local() {
+  local probe="ok"
+  [ "$probe" = "ok" ]
+}
+
+osm_require_local() {
+  if ! osm_probe_local 2>/dev/null; then
+    printf 'osm: this shell does not support "local".\n' >&2
+    printf '  ksh93 and Solaris sh are the usual cause. run osm with /bin/sh instead:\n' >&2
+    printf '    sh %s <arguments>\n' "$0" >&2
+    exit 1
+  fi
 }

@@ -1,6 +1,6 @@
 osm_cmd_send() {
   local prefix="" message="" no_clipboard=0 target="" literal=0
-  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0 want_qr=0
+  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0 want_qr=0 expires=""
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -44,6 +44,11 @@ osm_cmd_send() {
         shift
         continue
         ;;
+      --expires)
+        expires=$(osm_expiry_stamp "${2:-}") || exit 1
+        shift 2
+        continue
+        ;;
       --no-clipboard)
         no_clipboard=1
         shift
@@ -75,14 +80,16 @@ ${targets}"
   if [ -z "$targets" ] && [ -z "$keyfiles" ]; then
     osm_die "usage: osm send <user>[@host][:<fingerprint-prefix>] [message]"
   fi
-  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new" "$want_qr"
+  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new" "$want_qr" "$expires"
 }
 
 osm_send_run() {
   local targets="$1" keyfiles="$2" prefix="$3" message="$4" no_clipboard="$5" as_json="$6"
   local sign_as="$7" accept_new="$8" want_qr="$9"
+  shift 9
+  local expires="$1"
   local work supported selected selected_fps plaintext ciphertext armor alg copier tofile
-  local sigfile="" signature="" encoding="" compressed=""
+  local sigfile="" signature="" encoding="" compressed="" signer=""
   osm_init_workspace
   work="$OSM_WORKSPACE"
   supported="${work}/supported.keys"
@@ -113,10 +120,11 @@ osm_send_run() {
   fi
   if [ -n "$sign_as" ]; then
     sigfile="${work}/signature"
-    osm_sign_ciphertext "$(osm_sign_identity "$sign_as" "$work")" "$ciphertext" "$sigfile"
+    signer=$(osm_sign_identity "$sign_as" "$work") || exit 1
+    osm_sign_ciphertext "$signer" "$ciphertext" "$sigfile"
     signature=$(openssl base64 -A -in "$sigfile")
   fi
-  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" "$encoding" >"$armor"
+  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" "$encoding" "$expires" >"$armor"
   if [ "$as_json" -eq 1 ]; then
     osm_emit_json "$alg" "$tofile" "$selected_fps" "$armor"
   elif [ "$want_qr" -eq 1 ]; then
@@ -167,7 +175,7 @@ osm_collect_recipients() {
 }
 
 osm_cmd_read() {
-  local source="" identity_override="" literal=0 from_clipboard=0 require_sig=0
+  local source="" identity_override="" literal=0 from_clipboard=0 require_sig=0 ignore_expiry=0
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -186,6 +194,11 @@ osm_cmd_read() {
         shift
         continue
         ;;
+      --ignore-expiry)
+        ignore_expiry=1
+        shift
+        continue
+        ;;
       --)
         literal=1
         shift
@@ -198,11 +211,11 @@ osm_cmd_read() {
     source=$1
     shift
   done
-  osm_read_run "$source" "$identity_override" "$from_clipboard" "$require_sig"
+  osm_read_run "$source" "$identity_override" "$from_clipboard" "$require_sig" "$ignore_expiry"
 }
 
 osm_read_run() {
-  local source="$1" identity_override="$2" from_clipboard="$3" require_sig="$4"
+  local source="$1" identity_override="$2" from_clipboard="$3" require_sig="$4" ignore_expiry="$5"
   local work input keys ciphertext alg identity from signature sigfile
   osm_init_workspace
   work="$OSM_WORKSPACE"
@@ -241,7 +254,9 @@ osm_read_run() {
   elif [ "$require_sig" -eq 1 ]; then
     osm_die "this message carries no signature and --require-signature was given."
   fi
-  identity=$(osm_resolve_identity "$keys" "$identity_override")
+  osm_check_expiry "$(osm_armor_field "$input" "exp" | head -1)" "$ignore_expiry"
+  identity=$(osm_resolve_identity "$keys" "$identity_override") || exit 1
+  osm_require_passphrase_channel "$identity"
   case "$alg" in
   age)
     if ! osm_have age; then
@@ -357,9 +372,11 @@ options:
   --sign <you>        sign as a user whose published key you hold
   --accept-new-key    accept a recipient whose pinned keys changed
   --qr                print the message as a QR code instead of text
+  --expires <when>    mark the message stale after 30m, 6h, 7d and so on
   --identity <path>   decrypt with a specific private key
   --clipboard         read the message from the clipboard
   --require-signature refuse a message that carries no signature
+  --ignore-expiry     open a message the sender marked as expired
   --no-clipboard      do not copy the result to the clipboard
 
 hosts:

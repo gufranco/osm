@@ -1,5 +1,5 @@
 osm_emit_armor() {
-  local alg="$1" tofile="$2" selected_fps="$3" ciphertext="$4" from="${5:-}" signature="${6:-}" encoding="${7:-}"
+  local alg="$1" tofile="$2" selected_fps="$3" ciphertext="$4" from="${5:-}" signature="${6:-}" encoding="${7:-}" expires="${8:-}"
   local fingerprint recipient
   printf '%s\n' "$OSM_ARMOR_BEGIN"
   printf 'v: %s\n' "$OSM_FORMAT_VERSION"
@@ -12,6 +12,9 @@ osm_emit_armor() {
   fi
   if [ -n "$encoding" ]; then
     printf 'enc: %s\n' "$encoding"
+  fi
+  if [ -n "$expires" ]; then
+    printf 'exp: %s\n' "$expires"
   fi
   while IFS= read -r recipient; do
     printf 'to: %s\n' "$recipient"
@@ -57,4 +60,49 @@ osm_emit_json() {
     "$(osm_json_array "$tofile")" \
     "$(osm_json_array "$selected_fps")" \
     "$(awk '{gsub(/\\/,"\\\\"); gsub(/"/,"\\\""); printf "%s\\n", $0}' "$armor")"
+}
+
+osm_parse_duration() {
+  local value="$1" number unit
+  number=$(printf '%s' "$value" | sed -n 's/^\([0-9][0-9]*\).*$/\1/p')
+  unit=$(printf '%s' "$value" | sed -n 's/^[0-9][0-9]*\(.*\)$/\1/p')
+  if [ -z "$number" ]; then
+    osm_die "cannot read '${value}' as a duration. use forms like 30m, 6h or 7d."
+  fi
+  case "$unit" in
+  "" | s) printf '%s\n' "$number" ;;
+  m) printf '%s\n' "$((number * 60))" ;;
+  h) printf '%s\n' "$((number * 3600))" ;;
+  d) printf '%s\n' "$((number * 86400))" ;;
+  *) osm_die "unknown duration unit '${unit}'. use s, m, h or d." ;;
+  esac
+}
+
+osm_expiry_stamp() {
+  local seconds
+  seconds=$(osm_parse_duration "$1") || exit 1
+  printf '%s\n' "$(($(date -u +%s) + seconds))"
+}
+
+osm_format_stamp() {
+  date -u -r "$1" '+%Y-%m-%d %H:%M UTC' 2>/dev/null && return 0
+  date -u -d "@$1" '+%Y-%m-%d %H:%M UTC' 2>/dev/null && return 0
+  printf '%s\n' "$1"
+}
+
+osm_check_expiry() {
+  local stamp="$1" ignore="$2"
+  local now
+  if [ -z "$stamp" ]; then
+    return 0
+  fi
+  now=$(date -u +%s)
+  if [ "$now" -le "$stamp" ]; then
+    return 0
+  fi
+  if [ "$ignore" -eq 1 ]; then
+    osm_warn "this message expired, opening it anyway because --ignore-expiry was given."
+    return 0
+  fi
+  osm_die "this message expired. the sender marked it valid until $(osm_format_stamp "$stamp"). re-run with --ignore-expiry to open it regardless."
 }

@@ -35,3 +35,18 @@ osm_resolve_identity() {
   sed 's/^/  /' "$keyfile" >&2
   exit 1
 }
+
+osm_identity_is_encrypted() {
+  ! ssh-keygen -y -f "$1" -P "" >/dev/null 2>&1
+}
+
+osm_require_passphrase_channel() {
+  local identity="$1"
+  if ! osm_identity_is_encrypted "$identity"; then
+    return 0
+  fi
+  if : </dev/tty 2>/dev/null; then
+    return 0
+  fi
+  osm_die "'${identity}' is passphrase protected and there is no terminal to prompt on. run osm from an interactive shell, or pass an unencrypted key with --identity."
+}

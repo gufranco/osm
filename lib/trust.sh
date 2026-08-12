@@ -23,7 +23,7 @@ osm_trust_forget() {
 
 osm_trust_check() {
   local target="$1" fps="$2" accept_new="$3"
-  local store known current
+  local store known current line
   store=$(osm_trust_store)
   if [ ! -f "$store" ]; then
     : >"$store"
@@ -33,7 +33,12 @@ osm_trust_check() {
   current=$(sort "$fps" | tr '\n' ' ')
   if [ -z "$known" ]; then
     osm_trust_record "$target" "$fps" "$store"
-    osm_warn "first message to '${target}'. its key fingerprints are now pinned."
+    osm_warn "first message to '${target}'. verify these fingerprints out of band:"
+    while IFS= read -r line; do
+      if [ -n "$line" ]; then
+        printf '  %s\n' "$line" >&2
+      fi
+    done <"$fps"
     return 0
   fi
   if [ "$known" = "$current" ]; then

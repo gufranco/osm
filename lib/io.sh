@@ -1,5 +1,8 @@
 osm_clipboard_copy() {
   local file="$1"
+  if [ -n "$OSM_CLIPBOARD_COPY" ]; then
+    $OSM_CLIPBOARD_COPY <"$file" >/dev/null 2>&1 && printf '%s\n' "$OSM_CLIPBOARD_COPY" && return 0
+  fi
   if osm_have pbcopy; then
     pbcopy <"$file" && printf 'pbcopy\n' && return 0
   fi
@@ -28,6 +31,10 @@ osm_read_plaintext() {
 }
 
 osm_clipboard_paste() {
+  if [ -n "$OSM_CLIPBOARD_PASTE" ]; then
+    $OSM_CLIPBOARD_PASTE && return 0
+    return 1
+  fi
   if osm_have pbpaste; then
     pbpaste && return 0
   fi

@@ -16,6 +16,8 @@ osm_main() {
   esac
 }
 
+osm_require_local
+
 trap osm_cleanup EXIT
 trap 'osm_cleanup; exit 130' INT
 trap 'osm_cleanup; exit 143' TERM

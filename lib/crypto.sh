@@ -29,7 +29,7 @@ osm_encrypt_openssl() {
   if ! ssh-keygen -e -m PKCS8 -f "$selected" >"$pem" 2>/dev/null; then
     osm_die "could not convert the recipient SSH key to PKCS8."
   fi
-  capacity=$(osm_rsa_capacity "$pem")
+  capacity=$(osm_rsa_capacity "$pem") || exit 1
   size=$(wc -c <"$plaintext" | tr -d ' ')
   if [ "$size" -gt "$capacity" ]; then
     osm_die "message is ${size} bytes but this RSA key can carry only ${capacity}. install age to remove the limit."

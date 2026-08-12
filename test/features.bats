@@ -109,3 +109,160 @@ setup() {
   assert_status 0
   assert_output_contains "alg: rsa-oaep-sha1"
 }
+
+@test "an expiring message carries an exp header" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires 1h --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "exp: "
+}
+
+@test "a message inside its window still opens" {
+  "$OSM_BIN" send alice 'still fresh' --expires 1h --no-clipboard >"${WORK}/fresh" 2>/dev/null
+
+  run "$OSM_BIN" read "${WORK}/fresh"
+
+  assert_status 0
+  assert_output_contains "still fresh"
+}
+
+@test "an expired message is refused with the deadline shown" {
+  "$OSM_BIN" send alice 'gone stale' --expires 1s --no-clipboard >"${WORK}/stale" 2>/dev/null
+  sleep 2
+
+  run "$OSM_BIN" read "${WORK}/stale"
+
+  assert_status 1
+  assert_output_contains "expired"
+  assert_output_contains "--ignore-expiry"
+  assert_output_lacks "gone stale"
+}
+
+@test "an expired message opens under --ignore-expiry" {
+  "$OSM_BIN" send alice 'stale but wanted' --expires 1s --no-clipboard >"${WORK}/stale2" 2>/dev/null
+  sleep 2
+
+  run "$OSM_BIN" read "${WORK}/stale2" --ignore-expiry
+
+  assert_status 0
+  assert_output_contains "stale but wanted"
+}
+
+@test "a malformed duration is rejected" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires soon --no-clipboard"
+
+  assert_status 1
+  assert_output_contains "duration"
+}
+
+@test "an unknown duration unit is rejected" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires 5y --no-clipboard"
+
+  assert_status 1
+  assert_output_contains "unknown duration unit"
+}
+
+@test "the expiry deadline is rendered as a readable date" {
+  "$OSM_BIN" send alice 'x' --expires 1s --no-clipboard >"${WORK}/stale3" 2>/dev/null
+  sleep 2
+
+  run "$OSM_BIN" read "${WORK}/stale3"
+
+  assert_status 1
+  assert_output_contains "UTC"
+}
+
+@test "a custom clipboard command is used for copying" {
+  run env HOME="${WORK}/home" OSM_CLIPBOARD_COPY="tee ${WORK}/custom-clip" bash -c \
+    "printf 'x\n' | '$OSM_BIN' send alice"
+
+  assert_status 0
+  assert_output_contains "copied to the clipboard with tee"
+}
+
+@test "a custom clipboard command is used for reading" {
+  "$OSM_BIN" send alice 'from a custom clipboard' --no-clipboard >"${WORK}/custom.armored" 2>/dev/null
+
+  run env HOME="${WORK}/home" OSM_CLIPBOARD_PASTE="cat ${WORK}/custom.armored" \
+    "$OSM_BIN" read --clipboard
+
+  assert_status 0
+  assert_output_contains "from a custom clipboard"
+}
+
+@test "the first contact warning lists the fingerprints to verify" {
+  export XDG_CONFIG_HOME="${WORK}/fresh-pin-store"
+  mkdir -p "$XDG_CONFIG_HOME"
+
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "verify these fingerprints out of band"
+  assert_output_contains "SHA256:"
+}
+
+@test "accepts a duration in minutes" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires 30m --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "exp: "
+}
+
+@test "accepts a duration in days" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires 7d --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "exp: "
+}
+
+@test "accepts a bare duration in seconds" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --expires 3600 --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "exp: "
+}
+
+@test "refuses to decrypt with a passphrase key when no terminal exists" {
+  ssh-keygen -q -t ed25519 -N 'a-real-passphrase' -f "${WORK}/locked" </dev/null
+  "$OSM_BIN" send alice 'needs a prompt' --no-clipboard >"${WORK}/locked.armored" 2>/dev/null
+
+  run "$OSM_BIN" read "${WORK}/locked.armored" --identity "${WORK}/locked" </dev/null
+
+  assert_status 1
+  assert_output_contains "passphrase protected"
+}
+
+@test "explains that gunzip is needed to open a compressed message" {
+  local nogzip
+  nogzip="$(sandbox_path_excluding "${WORK}/bin-nogunzip" gunzip)"
+  head -c 4000 /dev/zero | tr '\0' 'e' >"${WORK}/gz"
+  "$OSM_BIN" send alice --no-clipboard <"${WORK}/gz" >"${WORK}/gz.armored" 2>/dev/null
+
+  run env PATH="$nogzip" HOME="${WORK}/home" "$OSM_BIN" read "${WORK}/gz.armored"
+
+  assert_status 1
+  assert_output_contains "gunzip is not installed"
+}
+
+@test "refuses a QR code for a message too large to encode" {
+  if ! command -v qrencode >/dev/null 2>&1; then
+    skip "qrencode is not installed on this machine"
+  fi
+  head -c 9000 /dev/urandom >"${WORK}/huge"
+
+  run bash -c "'$OSM_BIN' send alice --qr --no-clipboard < '${WORK}/huge'"
+
+  assert_status 1
+  assert_output_contains "too large for a QR code"
+}
+
+@test "names the problem on a shell without local" {
+  if ! command -v ksh >/dev/null 2>&1; then
+    skip "ksh is not installed on this machine"
+  fi
+
+  run ksh "${OSM_REPO_ROOT}/dist/osm" version
+
+  assert_status 1
+  assert_output_contains 'does not support "local"'
+}
