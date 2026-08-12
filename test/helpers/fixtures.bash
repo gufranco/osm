@@ -92,3 +92,7 @@ sandbox_path_excluding() {
   done
   printf '%s\n' "$dir"
 }
+
+fixture_expected_version() {
+  sed -n 's/^OSM_VERSION="\(.*\)"$/\1/p' "${OSM_REPO_ROOT}/lib/core.sh"
+}

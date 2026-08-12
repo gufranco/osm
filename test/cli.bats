@@ -29,7 +29,7 @@ setup() {
   run "$OSM_BIN" version
 
   assert_status 0
-  assert_output_contains "osm 1.0.0"
+  assert_output_contains "osm $(fixture_expected_version)"
   assert_output_contains "engine: age"
 }
 

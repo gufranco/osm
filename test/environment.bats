@@ -72,7 +72,7 @@ setup() {
   run env PATH="$ODD" HOME="${WORK}/home" "$OSM_BIN" version
 
   assert_status 0
-  assert_output_contains "osm 1.0.0"
+  assert_output_contains "osm $(fixture_expected_version)"
 }
 
 @test "reports no identity when the ssh directory holds no public keys" {
