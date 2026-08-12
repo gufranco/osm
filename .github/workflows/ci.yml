@@ -39,7 +39,7 @@ jobs:
 
       - name: Lint the scripts
         run: |
-          shellcheck --severity=style --shell=bash build.sh install.sh scripts/coverage.sh scripts/set-version.sh
+          shellcheck --severity=style --shell=bash build.sh install.sh scripts/coverage.sh scripts/set-version.sh scripts/update-formula.sh scripts/publish-formula.sh
           shellcheck --severity=style --shell=sh scripts/bsd-check.sh
 
       - name: Lint the tests
@@ -290,3 +290,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
+
+      - name: Point the formula at the tag that was just published
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORMULA_BOT_NAME: github-actions[bot]
+          FORMULA_BOT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: bash scripts/publish-formula.sh

@@ -1,8 +1,8 @@
 class Osm < Formula
   desc "Send encrypted messages through any chat using published SSH keys"
   homepage "https://github.com/gufranco/osm"
-  url "https://github.com/gufranco/osm/archive/refs/tags/v1.5.0.tar.gz"
-  sha256 "24e36da1019888a8789dbb93047f32aa6acb0c5709dcd87dc83748dccdb26ac0"
+  url "https://github.com/gufranco/osm/archive/refs/tags/v1.6.0.tar.gz"
+  sha256 "9296a0aa12704b393db91b5c77338112a57693594da60dd621604070570a4f10"
   license "MIT"
   head "https://github.com/gufranco/osm.git", branch: "main"
 
