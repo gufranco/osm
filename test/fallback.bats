@@ -62,7 +62,7 @@ setup() {
 }
 
 @test "refuses a message larger than the RSA key can carry" {
-  head -c 400 /dev/zero | tr '\0' 'a' >"${WORK}/toobig"
+  head -c 400 /dev/urandom >"${WORK}/toobig"
 
   run env PATH="$NOAGE" HOME="${WORK}/home" bash -c \
     "'$OSM_BIN' send rsauser --no-clipboard < '${WORK}/toobig'"
@@ -73,7 +73,7 @@ setup() {
 }
 
 @test "accepts a message exactly at the RSA capacity" {
-  head -c 214 /dev/zero | tr '\0' 'a' >"${WORK}/atlimit"
+  head -c 214 /dev/urandom >"${WORK}/atlimit"
 
   run env PATH="$NOAGE" HOME="${WORK}/home" bash -c \
     "'$OSM_BIN' send rsauser --no-clipboard < '${WORK}/atlimit'"

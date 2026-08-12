@@ -1,6 +1,6 @@
 osm_cmd_send() {
   local prefix="" message="" no_clipboard=0 target="" literal=0
-  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0
+  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0 want_qr=0
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -39,6 +39,11 @@ osm_cmd_send() {
         shift
         continue
         ;;
+      --qr)
+        want_qr=1
+        shift
+        continue
+        ;;
       --no-clipboard)
         no_clipboard=1
         shift
@@ -70,14 +75,14 @@ ${targets}"
   if [ -z "$targets" ] && [ -z "$keyfiles" ]; then
     osm_die "usage: osm send <user>[@host][:<fingerprint-prefix>] [message]"
   fi
-  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new"
+  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new" "$want_qr"
 }
 
 osm_send_run() {
   local targets="$1" keyfiles="$2" prefix="$3" message="$4" no_clipboard="$5" as_json="$6"
-  local sign_as="$7" accept_new="$8"
+  local sign_as="$7" accept_new="$8" want_qr="$9"
   local work supported selected selected_fps plaintext ciphertext armor alg copier tofile
-  local sigfile="" signature=""
+  local sigfile="" signature="" encoding="" compressed=""
   osm_init_workspace
   work="$OSM_WORKSPACE"
   supported="${work}/supported.keys"
@@ -93,6 +98,11 @@ osm_send_run() {
     osm_reject_bad_pin "$(head -1 "$tofile")" "$prefix" "$supported" "$selected_fps"
   fi
   osm_read_plaintext "$plaintext" "$message"
+  compressed="${work}/plain.gz"
+  if osm_compress "$plaintext" "$compressed"; then
+    encoding="gzip"
+    mv "$compressed" "$plaintext"
+  fi
   if osm_have age; then
     alg="age"
     osm_encrypt_age "$selected" "$plaintext" "$ciphertext"
@@ -106,15 +116,18 @@ osm_send_run() {
     osm_sign_ciphertext "$(osm_sign_identity "$sign_as" "$work")" "$ciphertext" "$sigfile"
     signature=$(openssl base64 -A -in "$sigfile")
   fi
-  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" >"$armor"
+  osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" "$encoding" >"$armor"
   if [ "$as_json" -eq 1 ]; then
     osm_emit_json "$alg" "$tofile" "$selected_fps" "$armor"
+  elif [ "$want_qr" -eq 1 ]; then
+    osm_emit_qr "$armor"
   else
     cat "$armor"
   fi
   if [ "$no_clipboard" -eq 0 ]; then
     if copier=$(osm_clipboard_copy "$armor"); then
       osm_warn "copied to the clipboard with ${copier}."
+      osm_clipboard_clear_later "$copier" "$armor" "$OSM_CLIPBOARD_TIMEOUT"
     else
       osm_warn "no clipboard tool found. copy the block above manually."
     fi
@@ -134,6 +147,7 @@ osm_collect_recipients() {
     osm_supported_keys "$raw" >"$one"
     osm_require_keys "$target" "$raw" "$one"
     osm_fingerprints "$one" >"${one}.fps"
+    osm_warn_weak_keys "$one" "$target"
     osm_trust_check "$target" "${one}.fps" "$accept_new"
     cat "$one" >>"$supported"
     printf '%s\n' "$target" >>"$tofile"
@@ -233,11 +247,16 @@ osm_read_run() {
     if ! osm_have age; then
       osm_die "this message needs age to open. install it with: brew install age, or apt install age"
     fi
-    osm_decrypt_age "$identity" "$ciphertext"
+    osm_decrypt_age "$identity" "$ciphertext" >"${work}/plainout"
     ;;
-  rsa-oaep-sha1) osm_decrypt_openssl "$identity" "$ciphertext" ;;
+  rsa-oaep-sha1) osm_decrypt_openssl "$identity" "$ciphertext" >"${work}/plainout" ;;
   *) osm_die "unknown algorithm '${alg}'. this message may come from a newer osm." ;;
   esac
+  if [ "$(osm_armor_field "$input" "enc" | head -1)" = "gzip" ]; then
+    osm_decompress "${work}/plainout"
+  else
+    cat "${work}/plainout"
+  fi
 }
 
 osm_cmd_keys() {
@@ -337,6 +356,7 @@ options:
   --json              print machine readable output
   --sign <you>        sign as a user whose published key you hold
   --accept-new-key    accept a recipient whose pinned keys changed
+  --qr                print the message as a QR code instead of text
   --identity <path>   decrypt with a specific private key
   --clipboard         read the message from the clipboard
   --require-signature refuse a message that carries no signature

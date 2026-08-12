@@ -110,3 +110,15 @@ osm_reject_bad_pin() {
 osm_key_type() {
   awk 'NR == 1 { print $1 }' "$1"
 }
+
+osm_warn_weak_keys() {
+  local supported="$1" target="$2"
+  local bits type
+  ssh-keygen -lf "$supported" 2>/dev/null | while IFS= read -r line; do
+    bits=$(printf '%s' "$line" | awk '{print $1}')
+    type=$(printf '%s' "$line" | awk '{type=$NF; gsub(/[()]/, "", type); print type}')
+    if [ "$type" = "RSA" ] && [ "$bits" -lt "$OSM_MIN_RSA_BITS" ]; then
+      osm_warn "'${target}' publishes a ${bits}-bit RSA key, below the ${OSM_MIN_RSA_BITS}-bit floor. ask them to rotate to ed25519."
+    fi
+  done
+}

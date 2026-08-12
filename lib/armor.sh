@@ -1,5 +1,5 @@
 osm_emit_armor() {
-  local alg="$1" tofile="$2" selected_fps="$3" ciphertext="$4" from="${5:-}" signature="${6:-}"
+  local alg="$1" tofile="$2" selected_fps="$3" ciphertext="$4" from="${5:-}" signature="${6:-}" encoding="${7:-}"
   local fingerprint recipient
   printf '%s\n' "$OSM_ARMOR_BEGIN"
   printf 'v: %s\n' "$OSM_FORMAT_VERSION"
@@ -9,6 +9,9 @@ osm_emit_armor() {
   fi
   if [ -n "$signature" ]; then
     printf 'sig: %s\n' "$signature"
+  fi
+  if [ -n "$encoding" ]; then
+    printf 'enc: %s\n' "$encoding"
   fi
   while IFS= read -r recipient; do
     printf 'to: %s\n' "$recipient"

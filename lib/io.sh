@@ -42,3 +42,49 @@ osm_clipboard_paste() {
   fi
   return 1
 }
+
+osm_clipboard_clear_later() {
+  local copier="$1" armor="$2" seconds="$3"
+  if [ "$seconds" -le 0 ]; then
+    return 0
+  fi
+  (
+    sleep "$seconds"
+    if osm_clipboard_paste 2>/dev/null | cmp -s - "$armor"; then
+      printf '' | "$copier" >/dev/null 2>&1 || true
+    fi
+  ) >/dev/null 2>&1 &
+}
+
+osm_compress() {
+  local plain="$1" dest="$2"
+  if ! osm_have gzip; then
+    return 1
+  fi
+  if ! gzip -c "$plain" >"$dest" 2>/dev/null; then
+    return 1
+  fi
+  if [ "$(wc -c <"$dest" | tr -d " ")" -ge "$(wc -c <"$plain" | tr -d " ")" ]; then
+    return 1
+  fi
+  return 0
+}
+
+osm_decompress() {
+  local src="$1"
+  if ! osm_have gunzip; then
+    osm_die "this message is compressed and gunzip is not installed."
+  fi
+  gunzip -c "$src"
+}
+
+osm_emit_qr() {
+  local armor="$1"
+  if ! osm_have qrencode; then
+    osm_die "--qr needs qrencode. install it with: brew install qrencode, or apt install qrencode"
+  fi
+  if [ "$(wc -c <"$armor" | tr -d " ")" -gt 2900 ]; then
+    osm_die "the message is too large for a QR code. send it as text instead."
+  fi
+  qrencode -t ANSIUTF8 <"$armor"
+}
