@@ -121,7 +121,8 @@ Ships as a single 549-line `dist/osm` with no runtime dependency on sibling file
 |:-----|:----|:--------|
 | POSIX `sh` | The tool itself | Preinstalled everywhere. `bash` is not required |
 | `curl`, `ssh-keygen`, `openssl` | Key fetch, fingerprints, base64 | Preinstalled on macOS and Linux |
-| [`age`](https://github.com/FiloSottile/age) | The encryption engine | `brew install age` or `apt install age` |
+| [`age`](https://github.com/FiloSottile/age) | The encryption engine | `brew install age` or `apt install age`. Pulled in automatically by the tap |
+| `qrencode` | Optional, only for `--qr` | `brew install qrencode` or `apt install qrencode` |
 
 > [!IMPORTANT]
 > Without `age` the tool still works, but falls back to RSA. That path cannot encrypt to an Ed25519 key and caps messages at 470 bytes. Most GitHub accounts publish Ed25519 keys today, so `age` is what makes this useful in practice.
@@ -129,7 +130,7 @@ Ships as a single 549-line `dist/osm` with no runtime dependency on sibling file
 ### Setup
 
 ```bash
-brew install gufranco/tap/osm            # once the tap is published
+brew install gufranco/tap/osm
 ```
 
 Or from source, which also installs the man page and shell completions:
