@@ -96,3 +96,34 @@ sandbox_path_excluding() {
 fixture_expected_version() {
   sed -n 's/^OSM_VERSION="\(.*\)"$/\1/p' "${OSM_REPO_ROOT}/lib/core.sh"
 }
+
+fixture_tamper_body() {
+  awk '
+    /^-----BEGIN OSM MESSAGE-----$/ { started = 1; print; next }
+    !started { print; next }
+    /^-----END OSM MESSAGE-----$/ { print; next }
+    body && !changed && length($0) > 20 {
+      sub(/^....../, "AAAAAA")
+      changed = 1
+      print
+      next
+    }
+    { print }
+    /^$/ { body = 1 }
+  ' "$1" >"$2"
+}
+
+fixture_corrupt_body() {
+  awk '
+    /^-----BEGIN OSM MESSAGE-----$/ { started = 1; print; next }
+    !started { print; next }
+    /^-----END OSM MESSAGE-----$/ { print; next }
+    body && !changed && length($0) > 20 {
+      print "!!!! not valid base64 !!!!"
+      changed = 1
+      next
+    }
+    { print }
+    /^$/ { body = 1 }
+  ' "$1" >"$2"
+}

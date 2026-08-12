@@ -50,7 +50,7 @@ setup() {
 
 @test "a tampered body fails verification and prints no plaintext" {
   "$OSM_BIN" send alice 'authentic secret' --sign carol --no-clipboard >"${WORK}/tamper"
-  awk 'NR == 10 { sub(/^....../, "AAAAAA") } { print }' "${WORK}/tamper" >"${WORK}/tampered"
+  fixture_tamper_body "${WORK}/tamper" "${WORK}/tampered"
 
   run "$OSM_BIN" read "${WORK}/tampered"
 

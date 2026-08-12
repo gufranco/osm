@@ -1,6 +1,6 @@
 osm_cmd_send() {
   local prefix="" message="" no_clipboard=0 target="" literal=0
-  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0 want_qr=0 expires=""
+  local targets="" keyfiles="" as_json=0 sign_as="" accept_new=0 want_qr=0 expires="" no_banner=0
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
@@ -44,6 +44,11 @@ osm_cmd_send() {
         shift
         continue
         ;;
+      --no-banner)
+        no_banner=1
+        shift
+        continue
+        ;;
       --expires)
         expires=$(osm_expiry_stamp "${2:-}") || exit 1
         shift 2
@@ -80,16 +85,16 @@ ${targets}"
   if [ -z "$targets" ] && [ -z "$keyfiles" ]; then
     osm_die "usage: osm send <user>[@host][:<fingerprint-prefix>] [message]"
   fi
-  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new" "$want_qr" "$expires"
+  osm_send_run "$targets" "$keyfiles" "$prefix" "$message" "$no_clipboard" "$as_json" "$sign_as" "$accept_new" "$want_qr" "$expires" "$no_banner"
 }
 
 osm_send_run() {
   local targets="$1" keyfiles="$2" prefix="$3" message="$4" no_clipboard="$5" as_json="$6"
   local sign_as="$7" accept_new="$8" want_qr="$9"
   shift 9
-  local expires="$1"
+  local expires="$1" no_banner="$2"
   local work supported selected selected_fps plaintext ciphertext armor alg copier tofile
-  local sigfile="" signature="" encoding="" compressed="" signer=""
+  local sigfile="" signature="" encoding="" compressed="" signer="" delivery=""
   osm_init_workspace
   work="$OSM_WORKSPACE"
   supported="${work}/supported.keys"
@@ -125,17 +130,27 @@ osm_send_run() {
     signature=$(openssl base64 -A -in "$sigfile")
   fi
   osm_emit_armor "$alg" "$tofile" "$selected_fps" "$ciphertext" "$sign_as" "$signature" "$encoding" "$expires" >"$armor"
+  delivery="${work}/delivery"
+  if [ "$no_banner" -eq 0 ] && osm_banner_enabled; then
+    {
+      osm_emit_banner
+      printf '\n'
+      cat "$armor"
+    } >"$delivery"
+  else
+    cat "$armor" >"$delivery"
+  fi
   if [ "$as_json" -eq 1 ]; then
     osm_emit_json "$alg" "$tofile" "$selected_fps" "$armor"
   elif [ "$want_qr" -eq 1 ]; then
     osm_emit_qr "$armor"
   else
-    cat "$armor"
+    cat "$delivery"
   fi
   if [ "$no_clipboard" -eq 0 ]; then
-    if copier=$(osm_clipboard_copy "$armor"); then
+    if copier=$(osm_clipboard_copy "$delivery"); then
       osm_warn "copied to the clipboard with ${copier}."
-      osm_clipboard_clear_later "$copier" "$armor" "$OSM_CLIPBOARD_TIMEOUT"
+      osm_clipboard_clear_later "$copier" "$delivery" "$OSM_CLIPBOARD_TIMEOUT"
     else
       osm_warn "no clipboard tool found. copy the block above manually."
     fi
@@ -373,6 +388,7 @@ options:
   --accept-new-key    accept a recipient whose pinned keys changed
   --qr                print the message as a QR code instead of text
   --expires <when>    mark the message stale after 30m, 6h, 7d and so on
+  --no-banner         omit the short note telling the recipient what this is
   --identity <path>   decrypt with a specific private key
   --clipboard         read the message from the clipboard
   --require-signature refuse a message that carries no signature

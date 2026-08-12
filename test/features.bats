@@ -14,7 +14,7 @@ setup_file() {
   fixture_publish_keys "$SERVED" "weakuser" "${WORK}/home/.ssh/weak.pub"
   fixture_publish_keys "$SERVED" "stronguser" "${WORK}/home/.ssh/strong.pub"
   keyserver_start "$SERVED"
-  NOQR="$(sandbox_path_excluding "${WORK}/bin-noqr" none)"
+  NOQR="$(sandbox_path_excluding "${WORK}/bin-noqr" qrencode)"
   export WORK SERVED OSM_GITHUB_BASE KEYSERVER_PID XDG_CONFIG_HOME NOQR
 }
 
@@ -266,4 +266,66 @@ setup() {
 
   assert_status 1
   assert_output_contains 'does not support "local"'
+}
+
+@test "the banner tells a newcomer what the block is and how to open it" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "This is an encrypted message"
+  assert_output_contains "brew tap gufranco/osm"
+  assert_output_contains "osm read"
+}
+
+@test "the banner sits above the block so it cannot corrupt parsing" {
+  "$OSM_BIN" send alice 'banner safe' --no-clipboard >"${WORK}/bannered" 2>/dev/null
+
+  run "$OSM_BIN" read "${WORK}/bannered"
+
+  assert_status 0
+  assert_output_contains "banner safe"
+}
+
+@test "the banner never appears inside the armored block" {
+  "$OSM_BIN" send alice 'x' --no-clipboard >"${WORK}/inside" 2>/dev/null
+
+  run awk '/^-----BEGIN OSM MESSAGE-----$/,/^-----END OSM MESSAGE-----$/' "${WORK}/inside"
+
+  assert_status 0
+  assert_output_lacks "This is an encrypted message"
+  assert_output_lacks "brew tap"
+}
+
+@test "--no-banner omits it" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --no-banner --no-clipboard"
+
+  assert_status 0
+  assert_output_lacks "This is an encrypted message"
+  assert_output_contains "-----BEGIN OSM MESSAGE-----"
+}
+
+@test "OSM_BANNER=0 omits it" {
+  run env HOME="${WORK}/home" OSM_BANNER=0 bash -c "printf 'x\n' | '$OSM_BIN' send alice --no-clipboard"
+
+  assert_status 0
+  assert_output_lacks "This is an encrypted message"
+  assert_output_contains "-----BEGIN OSM MESSAGE-----"
+}
+
+@test "json output carries no banner" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice --json --no-clipboard"
+
+  assert_status 0
+  assert_output_lacks "This is an encrypted message"
+  assert_output_contains '"alg":"age"'
+}
+
+@test "the clipboard receives the banner along with the block" {
+  run env HOME="${WORK}/home" OSM_CLIPBOARD_COPY="tee ${WORK}/banner-clip" bash -c \
+    "printf 'x\n' | '$OSM_BIN' send alice"
+
+  assert_status 0
+  run cat "${WORK}/banner-clip"
+  assert_output_contains "This is an encrypted message"
+  assert_output_contains "-----END OSM MESSAGE-----"
 }

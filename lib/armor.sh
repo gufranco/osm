@@ -106,3 +106,22 @@ osm_check_expiry() {
   fi
   osm_die "this message expired. the sender marked it valid until $(osm_format_stamp "$stamp"). re-run with --ignore-expiry to open it regardless."
 }
+
+osm_banner_enabled() {
+  case "$OSM_BANNER" in
+  0 | no | off | false) return 1 ;;
+  *) return 0 ;;
+  esac
+}
+
+osm_emit_banner() {
+  cat <<'BANNER'
+This is an encrypted message. Only the intended recipient can read it.
+To open it, install osm and pipe this whole block into it:
+
+  brew tap gufranco/osm https://github.com/gufranco/osm && brew install gufranco/osm/osm
+  pbpaste | osm read
+
+What it is: https://github.com/gufranco/osm
+BANNER
+}

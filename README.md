@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **4** key hosts · **146** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **4** key hosts · **153** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -43,7 +43,9 @@ UjZQd2NCRWRhVGJZbUFVWjZHUUFEeUJIUGNZTFVoMkc5ZmVRR0ZzCg==
 osm: copied to the clipboard with pbcopy.
 ```
 
-Paste that into Slack, Telegram, a Jira ticket, or an email. Alice runs one command:
+The block is preceded by a short note telling a first-time recipient what they are looking at and how to open it. It sits above `BEGIN`, where the parser already ignores everything, so it can never corrupt a message. Turn it off with `--no-banner` or `OSM_BANNER=0`.
+
+Paste all of it into Slack, Telegram, a Jira ticket, or an email. Alice runs one command:
 
 ```console
 $ pbpaste | osm read
@@ -179,6 +181,7 @@ identities     ok       1 usable key pair(s) under ~/.ssh
 | `--key <prefix>` | Encrypt to one key only, chosen by fingerprint prefix |
 | `--json` | Print machine readable output |
 | `--qr` | Print the message as a QR code instead of text |
+| `--no-banner` | Omit the short note that tells the recipient what the block is |
 | `--identity <path>` | Decrypt with a specific private key |
 | `--no-clipboard` | Do not copy the result to the clipboard |
 

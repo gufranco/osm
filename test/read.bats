@@ -49,7 +49,7 @@ setup() {
 }
 
 @test "rejects a message whose body was altered" {
-  sed '7s/^\(.\{10\}\)./\1Z/' "${WORK}/message" >"${WORK}/tampered"
+  fixture_tamper_body "${WORK}/message" "${WORK}/tampered"
 
   run "$OSM_BIN" read "${WORK}/tampered"
 
@@ -76,7 +76,7 @@ setup() {
 }
 
 @test "reports a body that is not valid base64" {
-  sed '7s/.*/not valid base64 !!!!/' "${WORK}/message" >"${WORK}/corrupt"
+  fixture_corrupt_body "${WORK}/message" "${WORK}/corrupt"
 
   run "$OSM_BIN" read "${WORK}/corrupt"
 
