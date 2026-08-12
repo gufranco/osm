@@ -130,8 +130,11 @@ Ships as a single 549-line `dist/osm` with no runtime dependency on sibling file
 ### Setup
 
 ```bash
-brew install gufranco/tap/osm
+brew tap gufranco/osm https://github.com/gufranco/osm
+brew install gufranco/osm/osm
 ```
+
+The tap is this repository. Homebrew needs the explicit URL because the repo is not named `homebrew-osm`, and that keeps the formula, the source and the release pipeline in one place instead of a second repo that drifts.
 
 Or from source, which also installs the man page and shell completions:
 
@@ -297,6 +300,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 | `make test` | 70 tests via `bats` |
 | `make cover` | `kcov`, gated at 91% |
 | `make install` | Copy the artifact, man page and completions into place |
+| `bash scripts/update-formula.sh <tag>` | Point [`Formula/osm.rb`](Formula/osm.rb) at a release and refresh its checksum. CI runs this automatically on publish |
 
 Sources live in [`lib/`](lib) as 8 modules and are concatenated by [`build.sh`](build.sh) into a single artifact, so the file people install stays reviewable in one pass.
 
