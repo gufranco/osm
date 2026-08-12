@@ -137,6 +137,7 @@ jobs:
   freebsd:
     name: freebsd
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - name: Round trip inside a FreeBSD guest
@@ -149,6 +150,7 @@ jobs:
   openbsd:
     name: openbsd
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - name: Round trip inside an OpenBSD guest
@@ -161,6 +163,7 @@ jobs:
   netbsd:
     name: netbsd
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - name: Round trip inside a NetBSD guest

@@ -363,10 +363,10 @@ The shipped artifact is POSIX `sh` with no bash-only constructs. Every row below
 
 | System | Status |
 |:-------|:-------|
-| macOS | verified, including stock `/bin/sh` and LibreSSL |
+| macOS | verified on Tahoe, both Apple Silicon and Intel, including stock `/bin/sh` and LibreSSL |
 | Linux, glibc | verified on Debian and Ubuntu |
 | Linux, musl | verified on Alpine with `bash` removed entirely |
-| FreeBSD, OpenBSD, NetBSD | verified in CI. Each runs a full encrypt-and-decrypt round trip inside a real guest VM |
+| FreeBSD, OpenBSD, NetBSD | verified in CI. Each runs a full encrypt-and-decrypt round trip inside a real guest VM. These jobs are non-blocking, because they depend on a third-party VM image download that occasionally returns 503, and a release should not hinge on that |
 
 ## Alternatives
 
