@@ -1,8 +1,15 @@
 #!/bin/sh
 set -eu
 
-root=${1:-.}
-cd "$root"
+root=${1:-}
+if [ -n "$root" ] && [ -d "$root" ]; then
+  cd "$root"
+fi
+
+if [ ! -f build.sh ]; then
+  printf 'build.sh is not in %s, the workspace was not synced as expected\n' "$(pwd)" >&2
+  exit 1
+fi
 
 sh build.sh
 sh dist/osm version

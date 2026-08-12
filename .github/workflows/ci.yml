@@ -144,7 +144,7 @@ jobs:
         with:
           usesh: true
           prepare: pkg install -y age curl python3
-          run: sh scripts/bsd-check.sh "$GITHUB_WORKSPACE"
+          run: sh scripts/bsd-check.sh
 
   openbsd:
     name: openbsd
@@ -156,7 +156,7 @@ jobs:
         with:
           usesh: true
           prepare: pkg_add age curl python3
-          run: sh scripts/bsd-check.sh "$GITHUB_WORKSPACE"
+          run: sh scripts/bsd-check.sh
 
   netbsd:
     name: netbsd
@@ -168,7 +168,7 @@ jobs:
         with:
           usesh: true
           prepare: /usr/sbin/pkg_add age curl python311
-          run: sh scripts/bsd-check.sh "$GITHUB_WORKSPACE"
+          run: sh scripts/bsd-check.sh
 
   coverage:
     name: coverage gate

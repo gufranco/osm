@@ -224,7 +224,8 @@ setup() {
 
 @test "refuses to decrypt with a passphrase key when no terminal exists" {
   ssh-keygen -q -t ed25519 -N 'a-real-passphrase' -f "${WORK}/locked" </dev/null
-  "$OSM_BIN" send alice 'needs a prompt' --no-clipboard >"${WORK}/locked.armored" 2>/dev/null
+  fixture_publish_keys "$SERVED" "lockeduser" "${WORK}/locked.pub"
+  "$OSM_BIN" send lockeduser 'needs a prompt' --no-clipboard >"${WORK}/locked.armored" 2>/dev/null
 
   run "$OSM_BIN" read "${WORK}/locked.armored" --identity "${WORK}/locked" </dev/null
 

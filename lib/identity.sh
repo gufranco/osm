@@ -45,7 +45,7 @@ osm_require_passphrase_channel() {
   if ! osm_identity_is_encrypted "$identity"; then
     return 0
   fi
-  if : </dev/tty 2>/dev/null; then
+  if (true </dev/tty) 2>/dev/null; then
     return 0
   fi
   osm_die "'${identity}' is passphrase protected and there is no terminal to prompt on. run osm from an interactive shell, or pass an unencrypted key with --identity."
