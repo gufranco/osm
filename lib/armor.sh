@@ -42,7 +42,7 @@ osm_armor_body() {
 osm_require_armor() {
   local file="$1"
   if ! grep -q -- "$OSM_ARMOR_BEGIN" "$file"; then
-    osm_die "input does not contain an osm message. expected a block starting with ${OSM_ARMOR_BEGIN}"
+    osm_die "no osm message found in the input. copy the whole block, including the ${OSM_ARMOR_BEGIN} and ${OSM_ARMOR_END} lines, and try again."
   fi
   if ! grep -q -- "$OSM_ARMOR_END" "$file"; then
     osm_die "the osm message is truncated. the closing ${OSM_ARMOR_END} line is missing."

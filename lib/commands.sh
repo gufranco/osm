@@ -191,11 +191,17 @@ osm_collect_recipients() {
 
 osm_cmd_read() {
   local source="" identity_override="" literal=0 from_clipboard=0 require_sig=0 ignore_expiry=0
+  local identity_command=""
   while [ $# -gt 0 ]; do
     if [ "$literal" -eq 0 ]; then
       case "$1" in
       --identity)
         identity_override=${2:-}
+        shift 2
+        continue
+        ;;
+      --identity-command)
+        identity_command=${2:-}
         shift 2
         continue
         ;;
@@ -226,11 +232,12 @@ osm_cmd_read() {
     source=$1
     shift
   done
-  osm_read_run "$source" "$identity_override" "$from_clipboard" "$require_sig" "$ignore_expiry"
+  osm_read_run "$source" "$identity_override" "$from_clipboard" "$require_sig" "$ignore_expiry" "$identity_command"
 }
 
 osm_read_run() {
   local source="$1" identity_override="$2" from_clipboard="$3" require_sig="$4" ignore_expiry="$5"
+  local identity_command="$6"
   local work input keys ciphertext alg identity from signature sigfile
   osm_init_workspace
   work="$OSM_WORKSPACE"
@@ -270,8 +277,18 @@ osm_read_run() {
     osm_die "this message carries no signature and --require-signature was given."
   fi
   osm_check_expiry "$(osm_armor_field "$input" "exp" | head -1)" "$ignore_expiry"
-  identity=$(osm_resolve_identity "$keys" "$identity_override") || exit 1
-  osm_require_passphrase_channel "$identity"
+  if [ -n "$identity_command" ]; then
+    identity="${work}/identity"
+    if ! (umask 077 && $identity_command >"$identity"); then
+      osm_die "the identity command failed: ${identity_command}"
+    fi
+    if [ ! -s "$identity" ]; then
+      osm_die "the identity command produced nothing: ${identity_command}"
+    fi
+  else
+    identity=$(osm_resolve_identity "$keys" "$identity_override") || exit 1
+    osm_require_passphrase_channel "$identity"
+  fi
   case "$alg" in
   age)
     if ! osm_have age; then
@@ -390,6 +407,8 @@ options:
   --expires <when>    mark the message stale after 30m, 6h, 7d and so on
   --no-banner         omit the short note telling the recipient what this is
   --identity <path>   decrypt with a specific private key
+  --identity-command <cmd>  read the private key from a command, for a key
+                      that lives in a secret manager rather than on disk
   --clipboard         read the message from the clipboard
   --require-signature refuse a message that carries no signature
   --ignore-expiry     open a message the sender marked as expired

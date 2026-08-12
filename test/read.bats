@@ -72,7 +72,7 @@ setup() {
   run "$OSM_BIN" read "${WORK}/noise"
 
   assert_status 1
-  assert_output_contains "does not contain an osm message"
+  assert_output_contains "no osm message found"
 }
 
 @test "reports a body that is not valid base64" {
@@ -128,4 +128,61 @@ setup() {
 
   assert_status 1
   assert_output_contains "unknown option for read"
+}
+
+@test "recognises a key held only by the ssh agent" {
+  local agentkey="${WORK}/agentonly"
+  ssh-keygen -q -t ed25519 -N '' -f "$agentkey" </dev/null
+  fixture_publish_keys "$SERVED" "agentuser" "${agentkey}.pub"
+  "$OSM_BIN" send agentuser 'for the agent user' --no-clipboard >"${WORK}/agent.armored" 2>/dev/null
+  local sock="/tmp/osm-test-agent-$$.sock"
+  rm -f "$sock"
+  eval "$(ssh-agent -a "$sock" -s)" >/dev/null
+  ssh-add -q "$agentkey" 2>/dev/null
+
+  HOME="${WORK}/stranger" run "$OSM_BIN" read "${WORK}/agent.armored"
+
+  ssh-agent -k >/dev/null 2>&1
+  rm -f "$sock"
+  assert_status 1
+  assert_output_contains "your ssh agent does hold one of these keys"
+  assert_output_contains "--identity-command"
+}
+
+@test "stays quiet about agents when none holds the key" {
+  run "$OSM_BIN" read "${WORK}/message" --identity "${WORK}/absent-key"
+
+  assert_status 1
+  assert_output_lacks "ssh agent does hold"
+}
+
+@test "reads the private key from a command" {
+  run "$OSM_BIN" read "${WORK}/message" \
+    --identity-command "cat ${WORK}/home/.ssh/id_ed25519_personal"
+
+  assert_status 0
+  assert_output_contains "the recovered secret"
+}
+
+@test "reports a failing identity command" {
+  run "$OSM_BIN" read "${WORK}/message" --identity-command "false"
+
+  assert_status 1
+  assert_output_contains "identity command"
+}
+
+@test "reports an identity command that produces nothing" {
+  run "$OSM_BIN" read "${WORK}/message" --identity-command "true"
+
+  assert_status 1
+  assert_output_contains "produced nothing"
+}
+
+@test "names the whole block when the paste is missing it" {
+  printf 'brew install gufranco/osm/osm\n' >"${WORK}/wrongpaste"
+
+  run "$OSM_BIN" read "${WORK}/wrongpaste"
+
+  assert_status 1
+  assert_output_contains "copy the whole block"
 }

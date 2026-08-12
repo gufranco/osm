@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **4** key hosts · **153** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **4** key hosts · **159** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -183,6 +183,7 @@ identities     ok       1 usable key pair(s) under ~/.ssh
 | `--qr` | Print the message as a QR code instead of text |
 | `--no-banner` | Omit the short note that tells the recipient what the block is |
 | `--identity <path>` | Decrypt with a specific private key |
+| `--identity-command <cmd>` | Read the private key from a command, for keys that live in a secret manager |
 | `--no-clipboard` | Do not copy the result to the clipboard |
 
 ### Key hosts
@@ -270,6 +271,20 @@ The message was addressed to a key whose private half is not on this machine. `o
 
 ```bash
 ssh-keygen -lf ~/.ssh/*.pub
+```
+
+</details>
+
+<details>
+<summary><strong>My keys live in 1Password, Secretive, or another SSH agent</strong></summary>
+<br>
+
+`age` can only decrypt with a key file, and an agent deliberately never hands over the private half, so there is nothing for `osm` to use. When the agent holds a key the message was addressed to, `osm` says so rather than leaving you guessing.
+
+Supply the key from your secret manager instead. It is written to a private temporary file and removed when `osm` exits:
+
+```bash
+pbpaste | osm read --identity-command "op read 'op://Private/ssh-key/private key'"
 ```
 
 </details>
