@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.7.0](https://github.com/gufranco/osm/compare/v1.6.0...v1.7.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* bump the formula inside the release job ([5f83a9b](https://github.com/gufranco/osm/commit/5f83a9bdc2e5298e22379bb042a2c6e2bb3d7cdc))
+
+
+### Features
+
+* tell a first-time recipient what the block is ([9c5d80c](https://github.com/gufranco/osm/commit/9c5d80ce262798157d79e174c1cc23ece398b844))
+
 # [1.6.0](https://github.com/gufranco/osm/compare/v1.5.0...v1.6.0) (2026-08-12)
 
 
