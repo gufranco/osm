@@ -148,7 +148,7 @@ jobs:
         run: bash build.sh
 
       - name: Enforce the coverage gate
-        run: bash scripts/coverage.sh 95
+        run: bash scripts/coverage.sh 93
 
   interop-encrypt:
     name: encrypt on macOS

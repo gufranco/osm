@@ -1,10 +1,12 @@
 osm_emit_armor() {
-  local alg="$1" user="$2" selected_fps="$3" ciphertext="$4"
-  local fingerprint
+  local alg="$1" tofile="$2" selected_fps="$3" ciphertext="$4"
+  local fingerprint recipient
   printf '%s\n' "$OSM_ARMOR_BEGIN"
   printf 'v: %s\n' "$OSM_FORMAT_VERSION"
   printf 'alg: %s\n' "$alg"
-  printf 'to: %s\n' "$user"
+  while IFS= read -r recipient; do
+    printf 'to: %s\n' "$recipient"
+  done <"$tofile"
   while IFS= read -r fingerprint; do
     printf 'key: %s\n' "$fingerprint"
   done <"$selected_fps"
@@ -33,4 +35,17 @@ osm_require_armor() {
   if ! grep -q -- "$OSM_ARMOR_END" "$file"; then
     osm_die "the osm message is truncated. the closing ${OSM_ARMOR_END} line is missing."
   fi
+}
+
+osm_json_array() {
+  awk 'BEGIN{printf "["} {gsub(/\\/,"\\\\"); gsub(/"/,"\\\""); printf "%s\"%s\"", (NR>1 ? "," : ""), $0} END{printf "]"}' "$1"
+}
+
+osm_emit_json() {
+  local alg="$1" tofile="$2" selected_fps="$3" armor="$4"
+  printf '{"version":"%s","alg":"%s","to":%s,"keys":%s,"armor":"%s"}\n' \
+    "$OSM_FORMAT_VERSION" "$alg" \
+    "$(osm_json_array "$tofile")" \
+    "$(osm_json_array "$selected_fps")" \
+    "$(awk '{gsub(/\\/,"\\\\"); gsub(/"/,"\\\""); printf "%s\\n", $0}' "$armor")"
 }

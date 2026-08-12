@@ -26,3 +26,19 @@ osm_read_plaintext() {
     osm_die "refusing to send an empty message."
   fi
 }
+
+osm_clipboard_paste() {
+  if osm_have pbpaste; then
+    pbpaste && return 0
+  fi
+  if osm_have wl-paste; then
+    wl-paste && return 0
+  fi
+  if osm_have xclip; then
+    xclip -selection clipboard -o && return 0
+  fi
+  if osm_have xsel; then
+    xsel --clipboard --output && return 0
+  fi
+  return 1
+}

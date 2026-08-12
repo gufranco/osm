@@ -7,6 +7,7 @@ osm_main() {
   send) osm_cmd_send "$@" ;;
   read) osm_cmd_read "$@" ;;
   keys) osm_cmd_keys "$@" ;;
+  keys-url) osm_keys_url "${1:-}" ;;
   doctor) osm_cmd_doctor ;;
   version | --version | -v) osm_cmd_version ;;
   help | --help | -h) osm_usage ;;

@@ -43,7 +43,7 @@ setup() {
   run "$OSM_BIN" help
 
   assert_status 0
-  assert_output_contains "osm send <github-user>"
+  assert_output_contains "osm send <user>"
   assert_output_contains "osm read [file]"
 }
 
@@ -119,4 +119,68 @@ setup() {
   assert_status 0
   assert_output_contains "no clipboard tool found"
   assert_output_contains "-----BEGIN OSM MESSAGE-----"
+}
+
+@test "reads the message from the clipboard when nothing is piped" {
+  local dir="${WORK}/clipread"
+  sandbox_path_excluding "$dir" none >/dev/null
+  "$OSM_BIN" send alice 'clipboard sourced secret' --no-clipboard >"${WORK}/clip.armored"
+  printf '%s\n' '#!/usr/bin/env bash' "cat '${WORK}/clip.armored'" >"${dir}/pbpaste"
+  chmod +x "${dir}/pbpaste"
+
+  run env PATH="$dir" HOME="${WORK}/home" python3 -c 'import os,pty,sys; sys.exit(os.waitstatus_to_exitcode(pty.spawn(sys.argv[1:])))' "$OSM_BIN" read
+
+  assert_status 0
+  assert_output_contains "clipboard sourced secret"
+}
+
+paste_shim() {
+  local dir="$1" name="$2" payload="$3"
+  sandbox_path_excluding "$dir" pbpaste >/dev/null
+  printf '%s\n' '#!/usr/bin/env bash' "cat '${payload}'" >"${dir}/${name}"
+  chmod +x "${dir}/${name}"
+}
+
+run_read_on_tty() {
+  env PATH="$1" HOME="${WORK}/home" "$OSM_BIN" read --clipboard </dev/null
+}
+
+@test "reads the clipboard with wl-paste" {
+  "$OSM_BIN" send alice 'wayland secret' --no-clipboard >"${WORK}/wl.armored"
+  paste_shim "${WORK}/bin-wlpaste" wl-paste "${WORK}/wl.armored"
+
+  run run_read_on_tty "${WORK}/bin-wlpaste"
+
+  assert_status 0
+  assert_output_contains "wayland secret"
+}
+
+@test "reads the clipboard with xclip" {
+  "$OSM_BIN" send alice 'xclip secret' --no-clipboard >"${WORK}/xc.armored"
+  paste_shim "${WORK}/bin-xclippaste" xclip "${WORK}/xc.armored"
+
+  run run_read_on_tty "${WORK}/bin-xclippaste"
+
+  assert_status 0
+  assert_output_contains "xclip secret"
+}
+
+@test "reads the clipboard with xsel" {
+  "$OSM_BIN" send alice 'xsel secret' --no-clipboard >"${WORK}/xs.armored"
+  paste_shim "${WORK}/bin-xselpaste" xsel "${WORK}/xs.armored"
+
+  run run_read_on_tty "${WORK}/bin-xselpaste"
+
+  assert_status 0
+  assert_output_contains "xsel secret"
+}
+
+@test "explains what to do when there is nothing to read at all" {
+  local dir="${WORK}/bin-noclip-read"
+  sandbox_path_excluding "$dir" pbpaste >/dev/null
+
+  run run_read_on_tty "$dir"
+
+  assert_status 1
+  assert_output_contains "nothing to read"
 }

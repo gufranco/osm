@@ -31,14 +31,14 @@ teardown_file() {
   run bash -c "printf 'x\n' | '$OSM_BIN' send ghost --no-clipboard"
 
   assert_status 1
-  assert_output_contains "GitHub account 'ghost' was not found"
+  assert_output_contains "no account 'ghost' at github"
 }
 
 @test "reports an account that publishes no keys" {
   run bash -c "printf 'x\n' | '$OSM_BIN' send barren --no-clipboard"
 
   assert_status 1
-  assert_output_contains "has no SSH keys configured"
+  assert_output_contains "has no SSH keys published"
 }
 
 @test "reports an account whose keys are all unsupported types" {
@@ -117,4 +117,86 @@ teardown_file() {
 
   assert_status 1
   assert_output_contains "could not reach"
+}
+
+@test "addresses several recipients in one message" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send --to solo --to multi --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "to: solo"
+  assert_output_contains "to: multi"
+}
+
+@test "accepts a local public key file as a recipient" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send --keys-file '${WORK}/keys/one.pub' --no-clipboard"
+
+  assert_status 0
+  assert_output_contains "key: ${FP_ONE}"
+  assert_output_contains "to: one.pub"
+}
+
+@test "rejects a key file that does not exist" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send --keys-file '${WORK}/absent.pub' --no-clipboard"
+
+  assert_status 1
+  assert_output_contains "does not exist"
+}
+
+@test "emits machine readable output with --json" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send solo --json --no-clipboard"
+
+  assert_status 0
+  assert_output_contains '"alg":"age"'
+  assert_output_contains '"to":["solo"]'
+  assert_output_contains "BEGIN OSM MESSAGE"
+}
+
+@test "resolves the key host from the recipient suffix" {
+  run "$OSM_BIN" keys-url alice@gitlab
+
+  assert_status 0
+  assert_output_contains "https://gitlab.com/alice.keys"
+}
+
+@test "refuses Bitbucket with a concrete remedy" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send alice@bitbucket --no-clipboard"
+
+  assert_status 1
+  assert_output_contains "no public SSH key endpoint"
+  assert_output_contains "--keys-file"
+}
+
+@test "treats an unknown host as a self-hosted forge" {
+  run "$OSM_BIN" keys-url alice@git.example.com
+
+  assert_status 0
+  assert_output_contains "https://git.example.com/alice.keys"
+}
+
+@test "resolves the codeberg host" {
+  run "$OSM_BIN" keys-url alice@codeberg
+
+  assert_status 0
+  assert_output_contains "https://codeberg.org/alice.keys"
+}
+
+@test "resolves the sourcehut host with its tilde convention" {
+  run "$OSM_BIN" keys-url alice@sourcehut
+
+  assert_status 0
+  assert_output_contains "https://meta.sr.ht/~alice.keys"
+}
+
+@test "accepts the srht alias for sourcehut" {
+  run "$OSM_BIN" keys-url alice@srht
+
+  assert_status 0
+  assert_output_contains "https://meta.sr.ht/~alice.keys"
+}
+
+@test "rejects a key file holding no usable key" {
+  run bash -c "printf 'x\n' | '$OSM_BIN' send --keys-file '${WORK}/keys/curve.pub' --no-clipboard"
+
+  assert_status 1
+  assert_output_contains "no usable recipient key"
 }

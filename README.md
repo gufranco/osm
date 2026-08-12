@@ -4,7 +4,7 @@
 
 [![ci](https://github.com/gufranco/osm/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/osm/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)](#development)
+[![coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](#development)
 [![shell](https://img.shields.io/badge/shell-POSIX%20sh-lightgrey)](#portability)
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 </div>
 
-**5** commands · **2** crypto engines · **88** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
+**5** commands · **2** crypto engines · **4** key hosts · **104** tests · **POSIX sh** · **macOS, Linux, BSD** · **zero** runtime dependencies beyond `age`
 
 > [!NOTE]
 > **Threat model, courtesy of [James Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
@@ -149,22 +149,38 @@ identities     ok       1 usable key pair(s) under ~/.ssh
 
 | Command | Purpose |
 |:--------|:--------|
-| `osm send <user> [message]` | Encrypt to a GitHub user. Reads stdin when no message argument is given |
-| `osm read [file]` | Decrypt. Reads stdin when no file is given |
+| `osm send <user>[@host] [message]` | Encrypt to a user on GitHub, GitLab, Codeberg, SourceHut, or any self-hosted forge. Reads stdin when no message argument is given |
+| `osm read [file]` | Decrypt. Reads stdin when piped, otherwise reads the clipboard |
 | `osm keys <user>` | List the keys `osm` can encrypt to, with fingerprints |
 | `osm doctor` | Check the local environment and print a remedy for each failure |
 | `osm version` | Print the version and the active engine |
 
 | Flag | Effect |
 |:-----|:-------|
+| `--to <target>` | Add a recipient. Repeat for several |
+| `--keys-file <path>` | Add recipients from a local public key file |
 | `--key <prefix>` | Encrypt to one key only, chosen by fingerprint prefix |
+| `--json` | Print machine readable output |
 | `--identity <path>` | Decrypt with a specific private key |
 | `--no-clipboard` | Do not copy the result to the clipboard |
+
+### Key hosts
+
+| Host | Recipient syntax | Status |
+|:-----|:-----------------|:-------|
+| GitHub | `alice` | default |
+| GitLab | `alice@gitlab` | verified |
+| Codeberg | `alice@codeberg` | verified |
+| SourceHut | `alice@sourcehut` | verified |
+| Self-hosted Gitea, Forgejo, GitLab | `alice@git.example.com` | any host serving `/<user>.keys` |
+| Bitbucket | not supported | it publishes no public key endpoint, so use `--keys-file` |
 
 ```bash
 printf 'the secret' | osm send alice          # stdin keeps it out of the process list
 osm send alice:iD5CQy 'only to that one key'  # pin one key by fingerprint prefix
-osm read message.txt                          # or pipe it in
+osm send bob@gitlab 'works across forges'     # gitlab, codeberg, sourcehut, self-hosted
+osm send --to alice --to bob@codeberg 'hi'    # one message, several people
+osm read                                      # with nothing piped, reads the clipboard
 ```
 
 > [!TIP]
@@ -264,7 +280,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 | `make check` | Format, lint, test, and the coverage gate |
 | `make build` | Concatenate [`lib/`](lib) into `dist/osm` |
 | `make test` | 70 tests via `bats` |
-| `make cover` | `kcov`, gated at 95% |
+| `make cover` | `kcov`, gated at 93% |
 | `make install` | Copy the artifact onto `PATH` |
 
 Sources live in [`lib/`](lib) as 8 modules and are concatenated by [`build.sh`](build.sh) into a single artifact, so the file people install stays reviewable in one pass.

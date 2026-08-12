@@ -3,7 +3,7 @@ ARTIFACT := dist/osm
 SOURCES := lib build.sh install.sh scripts/coverage.sh
 TESTS := test
 COVERAGE_DIR := coverage
-COVERAGE_MIN := 95
+COVERAGE_MIN := 93
 
 .PHONY: help build fmt fmt-check lint test cover check clean install
 

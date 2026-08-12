@@ -1,13 +1,41 @@
+osm_target_user() {
+  printf '%s\n' "${1%%@*}"
+}
+
+osm_target_host() {
+  case "$1" in
+  *@*) printf '%s\n' "${1#*@}" ;;
+  *) printf 'github\n' ;;
+  esac
+}
+
+osm_keys_url() {
+  local user host
+  user=$(osm_target_user "$1")
+  host=$(osm_target_host "$1")
+  case "$host" in
+  github) printf '%s/%s.keys\n' "$OSM_GITHUB_BASE" "$user" ;;
+  gitlab) printf 'https://gitlab.com/%s.keys\n' "$user" ;;
+  codeberg) printf 'https://codeberg.org/%s.keys\n' "$user" ;;
+  sourcehut | srht) printf 'https://meta.sr.ht/~%s.keys\n' "$user" ;;
+  bitbucket)
+    osm_die "Bitbucket publishes no public SSH key endpoint, so osm cannot look '${user}' up. ask them for a public key file and pass it with --keys-file."
+    ;;
+  *) printf 'https://%s/%s.keys\n' "$host" "$user" ;;
+  esac
+}
+
 osm_fetch_keys() {
-  local user="$1" dest="$2"
-  local code
-  if ! code=$(curl -sS -o "$dest" -w '%{http_code}' --max-time "$OSM_HTTP_TIMEOUT" "${OSM_GITHUB_BASE}/${user}.keys" 2>/dev/null); then
-    osm_die "could not reach ${OSM_GITHUB_BASE}. check your network connection."
+  local target="$1" dest="$2"
+  local code url
+  url=$(osm_keys_url "$target")
+  if ! code=$(curl -sSL -o "$dest" -w '%{http_code}' --max-time "$OSM_HTTP_TIMEOUT" "$url" 2>/dev/null); then
+    osm_die "could not reach ${url}. check your network connection."
   fi
   case "$code" in
   200) ;;
-  404) osm_die "GitHub account '${user}' was not found." ;;
-  *) osm_die "unexpected HTTP ${code} while fetching keys for '${user}'." ;;
+  404) osm_die "no account '$(osm_target_user "$target")' at $(osm_target_host "$target")." ;;
+  *) osm_die "unexpected HTTP ${code} while fetching keys from ${url}." ;;
   esac
 }
 
@@ -27,11 +55,11 @@ osm_require_keys() {
   local user="$1" raw="$2" supported="$3"
   local unsupported
   if [ ! -s "$raw" ]; then
-    osm_die "GitHub account '${user}' has no SSH keys configured. ask them to add one at https://github.com/settings/keys"
+    osm_die "'${user}' has no SSH keys published. ask them to add one to their account."
   fi
   if [ ! -s "$supported" ]; then
     unsupported=$(osm_unsupported_types "$raw")
-    osm_die "GitHub account '${user}' publishes no key osm can encrypt to. found: ${unsupported}only ssh-ed25519 and ssh-rsa are supported."
+    osm_die "'${user}' publishes no key osm can encrypt to. found: ${unsupported}only ssh-ed25519 and ssh-rsa are supported."
   fi
 }
 

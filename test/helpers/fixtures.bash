@@ -82,7 +82,7 @@ sandbox_path_excluding() {
   local tool resolved
   mkdir -p "$dir"
   for tool in bash env curl ssh-keygen openssl awk sed grep wc tr sort cat mktemp \
-    chmod rm head fold cut dirname basename uname cmp mkdir touch age; do
+    chmod rm head fold cut dirname basename uname cmp mkdir touch age python3 kcov; do
     if [[ "$tool" == "$excluded" ]]; then
       continue
     fi
