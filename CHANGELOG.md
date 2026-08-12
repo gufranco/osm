@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.5.0](https://github.com/gufranco/osm/compare/v1.4.0...v1.5.0) (2026-08-12)
+
+
+### Bug Fixes
+
+* probe the terminal without killing the shell ([505a280](https://github.com/gufranco/osm/commit/505a2808cc2d5badeb480153e4a33aed5ced6c11))
+
+
+### Features
+
+* expiry, clipboard overrides and clearer failures ([e4f0ef9](https://github.com/gufranco/osm/commit/e4f0ef964ec5e4cccd8c2f799363bec717884623))
+
 # [1.4.0](https://github.com/gufranco/osm/compare/v1.3.0...v1.4.0) (2026-08-12)
 
 
