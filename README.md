@@ -18,6 +18,13 @@
 
 **5** commands · **2** crypto engines · **70** tests · **96%** coverage · **macOS + Linux** · **zero** runtime dependencies beyond `age`
 
+> [!NOTE]
+> **Threat model, per [Mickens](https://www.schneier.com/blog/archives/2015/08/mickens_on_secu.html):** you are either dealing with Mossad or not-Mossad.
+>
+> `osm` is a not-Mossad tool. It keeps your database password out of Slack's retention policy, out of your colleague's notification history, and out of the backup tape nobody remembers exists. That covers the adversary you actually have.
+>
+> If your adversary *is* the Mossad, they will read the plaintext off your laptop while you type it, and no amount of Ed25519 is going to help. YOU'RE GONNA DIE AND THERE'S NOTHING THAT YOU CAN DO ABOUT IT. Consider [the security limits](#what-it-does-not-do) accordingly.
+
 ---
 
 ```console
